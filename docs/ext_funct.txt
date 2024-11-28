@@ -1,0 +1,91 @@
+socket() -> Creates a new socket endpoint for communication. 
+Used to create both the listening socket (server socket) and client sockets. The listening socket accepts incoming connections, while client sockets are used for communication with connected clients.
+
+close() -> Closes an open file descriptor, freeing up system resources.
+Used to close client sockets when a user disconnects or when the server shuts down. Also used to close the listening socket during server shutdown.
+
+setsockopt() -> Sets options on a socket, such as timeouts and permissions.
+Used to set SO_REUSEADDR option, allowing the server to bind to a port that was recently used and is in the TIME_WAIT state.
+Can set socket options for performance tuning and behavior customization.
+
+getsockname() -> Retrieves the local name (address and port) of a socket.
+Used to obtain the server's IP address and port after binding, useful for logging or displaying server information.
+
+getprotobyname() -> Retrieves protocol information by name.
+Used to get the protocol number for TCP when creating sockets. For example, getprotobyname("tcp") returns the protocol number needed for the socket function.
+
+gethostbyname() -> Resolves a hostname to an IP address.
+Used to resolve hostnames of clients or other servers. However, it's considered deprecated in favor of getaddrinfo.
+
+getaddrinfo() -> Provides network address and service translation, supporting both IPv4 and IPv6.
+Used to obtain address information for binding or connecting sockets.
+
+freeaddrinfo() -> Frees memory allocated by getaddrinfo.
+After using getaddrinfo to obtain address structures, freeaddrinfo is called to prevent memory leaks.
+
+bind() -> Associates a socket with a local address and port.
+Used to bind the listening socket to the server's IP address and a specific port (e.g., the default IRC port 6667).
+Essential for the server to accept incoming connection requests on the designated port.
+
+connect() -> Initiates a connection on a socket.
+Typically used by client applications.
+On the server side, it may be used if implementing server-to-server communication (not common in basic IRC server implementations).
+
+listen() -> Marks a bound socket as passive to accept incoming connection requests.
+Used after binding the listening socket to start listening for client connection requests.
+
+accept() -> Accepts an incoming connection, creating a new socket for communication.
+Called on the listening socket to accept new client connections.
+Returns a new socket descriptor for communicating with the connected client.
+
+htons() -> Converts a 16-bit value from host byte order to network byte order.
+Used to convert port numbers before using them in network functions like bind or connect, ensuring correct byte ordering across different systems.
+
+htonl() -> Converts a 32-bit value from host byte order to network byte order.
+May be used when dealing with IP addresses or other 32-bit numerical values that need to be sent over the network.
+
+ntohs() Converts a 16-bit value from network byte order to host byte order.
+Used to interpret port numbers received from network data, ensuring they are correctly understood by the host system.
+
+ntohl() -> Converts a 32-bit value from network byte order to host byte order.
+Used when reading 32-bit network data like IP addresses or sequence numbers.
+
+inet_addr() -> Converts an IPv4 address from dotted-decimal notation to an in_addr_t in network byte order.
+Used to convert IP address strings to numerical form when setting up connections or comparing addresses.
+
+inet_ntoa() -> Converts an IPv4 address from an in_addr structure to a dotted-decimal string.
+Used to obtain the string representation of client IP addresses for logging, displaying user information, or debugging.
+
+send() -> Sends data over a connected socket.
+Used to send messages, commands, and responses to connected clients.
+Essential for communicating server messages, broadcast messages, or command replies.
+
+recv() -> Receives data from a connected socket.
+Used to receive messages and commands from clients.
+Handles incoming data for processing client requests and commands.
+
+signal() ->Sets up simple signal handlers for process signals.
+Used to handle signals like SIGINT (Ctrl+C) for graceful shutdown.
+Allows the server to perform cleanup operations before exiting.
+
+sigaction() -> Provides a more robust way to handle signals, replacing signal.
+Preferred over signal for setting up signal handlers due to its reliability and additional features.
+Used to handle signals like SIGPIPE, which occurs when trying to write to a disconnected socket.
+
+lseek() -> Repositions the read/write file offset of an open file descriptor.
+May be used if the server reads from or writes to files (e.g., log files, configuration files).
+Not directly related to network communication but useful for file operations.
+
+fstat() -> Obtains information about a file based on its file descriptor.
+Can be used to get metadata about files (e.g., size, permissions) if the server interacts with the filesystem.
+Useful for managing resources or implementing features like file transfers (DCC) if extended.
+
+fcntl() -> Performs operations on file descriptors (e.g., changing properties).
+Used to manipulate socket options, such as setting a socket to non-blocking mode with O_NONBLOCK.
+Essential for implementing non-blocking I/O, allowing the server to handle multiple clients efficiently without threads.
+
+poll(or epoll) -> Monitors multiple file descriptors to see if I/O is possible on any of them.
+Used to manage multiple client connections within a single-threaded event loop.
+Allows the server to detect when sockets are ready for reading or writing without blocking.
+Helps in efficiently scaling the server to handle many simultaneous connections.
+
