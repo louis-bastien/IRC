@@ -28,12 +28,43 @@ int main(int argc, char** argv) {
             return 1;
     }
     listen(serv_fd, 5);
-    int client_fd = accept(serv_fd, NULL, NULL);
-    std::cout << "Client fd = " << client_fd << std::endl;
-    char buffer[1024] = {0};
-    recv(client_fd, buffer, sizeof(buffer), 0);
-    std::cout << "Message from client: " << buffer << std::endl;
+    
+    int epoll_fd = epoll_create1(0):
+    struct epoll_event epev;
+    epev.events = EPOLLIN;
+    epev.fd  = serv_fd;
+
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serv_fd, &epev);
+
+    while (1) {
+        struct epoll_event events[MAX_EVENTS];
+        int n = epoll_wait(epfd, events, MAX_EVENTS, -1);
+        
+        for (int i = 0; i < n, i++) {
+            if (event[i].data.fd == serv_fd) {
+                int client_fd = accept(serv_fd, NULL, NULL);
+                epev.events = EPOLLIN;
+                epev.fd  = client_fd;
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &epev);
+            } 
+            else if (events[i].events & EPOLLIN) {
+                char buffer[BUFFER_SIZE];
+                int bytes_read = read(events[i].data.fd, buffer, sizeof(buffer));
+                if (bytes_read < 0) {
+                    std::cout << "Read error" << std::endl;
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+                    close(events[i].data.fd);
+                }
+                if (bytes_read == 0) {
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+                    close(events[i].data.fd);
+                }
+                else {
+                    std::cout << buffer << std::endl;
+                }
+            }
+        }
+    }
     close(serv_fd);
-    close(client_fd);
     return 0;
 }
