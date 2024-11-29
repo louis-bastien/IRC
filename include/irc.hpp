@@ -1,8 +1,8 @@
-#ifndef IRC_HPP
-#define IRC_HPP
+#pragma once 
 
 #include <string>
 #include <iostream>
-
-#endif
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
