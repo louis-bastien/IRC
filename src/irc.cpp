@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
     epev.events = EPOLLIN;
     epev.data.fd  = serv_fd;
 
+
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serv_fd, &epev);
 
     while (1) {

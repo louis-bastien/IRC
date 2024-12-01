@@ -1,49 +1,39 @@
-# Compiler settings
-CXX = c++
-CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -fsanitize=address
 
-# Target executable name
-TARGET = ircserv
+CC = c++
+FLAGS = -std=c++98 -Wall -Wextra -Werror
 
-#Folders
-SRC_DIR = src
-OBJ_DIR = obj
-INC_DIR = include
+SRC_DIR = src/
+INC_DIR = include/
+TMP_DIR = tmp/
 
-#Filenames
-FILES = irc
 
-# Source, Object, Dependency files
-SRC = $(FILES:%=$(SRC_DIR)/%.cpp)
-OBJ = $(FILES:%=$(OBJ_DIR)/%.o)
-DEP = $(OBJ:.o=.d)
+SRCS = irc.cpp user.cpp
+OBJS = $(addprefix $(TMP_DIR), $(SRCS:.cpp=.o))
+DEPS = $(OBJS:.o=.d)
 
-# Default target
-all: $(TARGET)
+NAME = ircserv
 
-# Run target ignoring exit status
-run: all
-	./$(TARGET) 4242 mypassword
+DFLAGS = -MMD -MP
 
-# Compile .cpp files into .o object files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(CXX) $(CXXFLAGS) -I$(INC_DIR) -MMD -MP -c $< -o $@
+all: $(TMP_DIR) $(NAME)
 
-# Link object files into the target executable
-$(TARGET): $(OBJ) Makefile
-	$(CXX) $(CXXFLAGS) $(OBJ) -o $(TARGET)
+$(NAME): $(OBJS)
+	$(CC) $(FLAGS) $(OBJS) -o $(NAME)
 
-# Clean up objects and dependency files
+$(TMP_DIR):
+	@mkdir -p $(TMP_DIR)
+
+$(TMP_DIR)%.o: $(SRC_DIR)%.cpp
+	$(CC) $(FLAGS) $(DFLAGS) -I $(INC_DIR) -c $< -o $@
+
 clean:
-	rm -rf $(OBJ)
-	rm -rf $(OBJ:.o=.d)
-	
-#Also clean up the target executable (ignore error if file does not exist)
-fclean: clean
-	-rm -f $(TARGET)
+	rm -rf $(TMP_DIR)
 
-#Clean up and recompile
+fclean: clean
+	rm -f $(NAME)
+
 re: fclean all
 
-# Include dependencies
--include $(DEP)
+.PHONY: clean fclean all re
+
+-include $(DEPS)
