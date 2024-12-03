@@ -24,7 +24,7 @@ class Server {
         int _serverFd;
         int _epollFd;
 
-        std::map<int, User> _userMap;
+        std::map<int fd, User> _userMap;
         std::map<std::string, Channel> _channelMap;
 
         void epollInit(void);
@@ -40,10 +40,7 @@ class Server {
         void init(void);
         void start(void);
 
-        void endConnection(void);
-
-        std::string readFromSocket(int socketFd) const;
-        void writeToSocket(int socketFD, std::string message);
+        void closeClient(void);
 };
 
 

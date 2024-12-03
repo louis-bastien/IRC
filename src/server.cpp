@@ -19,7 +19,7 @@ void Server::init(void) {
 }
 
 void Server::start(void) {
-    epollInit();;
+    epollInit();
     while (true) {
         struct epoll_event events[MAX_EVENTS];
         int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
@@ -38,26 +38,21 @@ void Server::epollInit(void) {
     _epollFd = epoll_create1(0);
     if (_epollFd < 0)
         throw std::runtime_error("Failed creat epoll instance");
-        
-    struct epoll_event epev;
-    epev.events = EPOLLIN;
-    epev.data.fd  = _serverFd;
-    if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _serverFd, &epev) < 0)
-        throw std::runtime_error("Failed to add server event to epoll instance");
+    epollAddFd(_serverFd);
 }
 
+//We need to work on how to add/handle new users
+//I assume User can be instantiated with only its associated socket fd;
 void Server::acceptConnection(void) {
     struct sockaddr_in clientAddr;
     socklen_t clientAddrSize;
 
-    int clientFd = accept(_serverFd, NULL, NULL);
+    int clientFd = accept(_serverFd, &clientAddr, &clientAddrSize);
     if (client_fd < 0)
-        throw std::runtime_error("Failed to accept new client")
-    
-    epev.events = EPOLLIN;
-    epev.data.fd  = clientFd;
-    
-    epoll_ctl(epollFd, EPOLL_CTL_ADD, client_fd, &epev);
+        throw std::runtime_error("Failed to accept new client");
+    User NewUser(clientFd);
+    _userMap.insert(clientFd, newUser);
+    epollAddFd(clientFd);
 }
 
 void Server::handleReadEvent(int eventFd) {
@@ -83,8 +78,18 @@ void Server::handleReadEvent(int eventFd) {
 void Server::closeClient(int clientFd) {
     epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);
     _userMap.erase(clientFd);
-    close(clientFd);
+    if (close(clientFd) < 0)
+        throw std::runtime_error("Failed to close client fd");
     //also need to remove the user from all channels
+}
+
+void Server::epollAddFd(newFd) {
+    struct epoll_event epev;
+    epev.events = EPOLLIN;
+    epev.data.fd  = newFd;
+    if (epoll_ctl(epollFd, EPOLL_CTL_ADD, newFd, &epev) < 0)
+        throw std::runtime_error("Failed to add server event to epoll instance");
+
 }
 
 const std::string& Server::getPassword(void) const {
