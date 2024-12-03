@@ -1,4 +1,8 @@
-#pragma once 
+#pragma once
+#include <sstream>
+
+int check_args(int argc, char **argv);
+
 
 #include <string>
 #include <iostream>
@@ -8,4 +12,5 @@
 #include <sys/epoll.h>
 #define BUFFER_SIZE 1024
 #define MAX_EVENTS 24
+
 
