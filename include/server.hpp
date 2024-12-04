@@ -9,7 +9,7 @@
 #include <user.hpp>
 #include <channel.hpp>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 512
 #define MAX_EVENTS 24
 #define MAX_CONNECTIONS 100
 #define MAX_CLIENTS 10
@@ -32,15 +32,15 @@ class Server {
         void handleReadEvent(int eventFd);
 
     public:
-        server(int port, std::string password);
-        ~server();
+        Server(int port, std::string password);
+        ~Server();
 
         const std::string& getPassword(void) const;
 
         void init(void);
         void start(void);
 
-        void closeClient(void);
+        void closeClient(int clientFd);
 };
 
 

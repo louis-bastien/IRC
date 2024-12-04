@@ -22,7 +22,7 @@ void Server::start(void) {
     epollInit();
     while (true) {
         struct epoll_event events[MAX_EVENTS];
-        int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
         if (n < 0)
             throw std::runtime_error("Epoll_wait failed")
         for (int i = 0; i < n; i++) {
@@ -43,6 +43,12 @@ void Server::epollInit(void) {
 
 //We need to work on how to add/handle new users
 //I assume User can be instantiated with only its associated socket fd;
+//We also need to figur out what to do with the client's address
+//RFC says:
+//  all servers must have the
+//  following information about all clients: the real name of the host
+//  that the client is running on, the username of the client on that
+//  host, and the server to which the client is connected.
 void Server::acceptConnection(void) {
     struct sockaddr_in clientAddr;
     socklen_t clientAddrSize;
@@ -50,29 +56,31 @@ void Server::acceptConnection(void) {
     int clientFd = accept(_serverFd, &clientAddr, &clientAddrSize);
     if (client_fd < 0)
         throw std::runtime_error("Failed to accept new client");
-    User NewUser(clientFd);
+    User NewUser(clientFd, clientAddr);
     _userMap.insert(clientFd, newUser);
     epollAddFd(clientFd);
 }
 
-void Server::handleReadEvent(int eventFd) {
+//Get message only. Parsing/execution done later
+std::string Server::handleReadEvent(int eventFd) {
     char buffer[BUFFER_SIZE];
     std::string message;
 
-    int bytes_read = read(eventFd, buffer, sizeof(buffer));
     while (true) {
+        int bytes_read = read(eventFd, buffer, sizeof(buffer));
         if (bytes_read < 0) {
             closeClient(eventFd);
             throw std::runtime_error("Failed to read from client fd");
         }
-        if (bytes_read == 0)
+        else if (bytes_read == 0)
             closeClient(eventFd);
         else {
             message.append(buffer, bytes_read);
-            if (message.find('\n') != std::string::npos)
+            if (message.find("\r\n") != std::string::npos)
                 break;
         }
     }
+    handleMessage(message);
 }
 
 void Server::closeClient(int clientFd) {
