@@ -1,13 +1,13 @@
-
 CC = c++
 FLAGS = -std=c++98 -Wall -Wextra -Werror
 
 SRC_DIR = src/
 INC_DIR = include/
 TMP_DIR = tmp/
+LOG_DIR = log/
 
 
-SRCS = irc.cpp user.cpp
+SRCS = irc.cpp User.cpp Logger.cpp Server.cpp
 OBJS = $(addprefix $(TMP_DIR), $(SRCS:.cpp=.o))
 DEPS = $(OBJS:.o=.d)
 
@@ -23,11 +23,15 @@ $(NAME): $(OBJS)
 $(TMP_DIR):
 	@mkdir -p $(TMP_DIR)
 
+$(LOG_DIR):
+	@mkdir -p $(LOG_DIR)
+
 $(TMP_DIR)%.o: $(SRC_DIR)%.cpp
 	$(CC) $(FLAGS) $(DFLAGS) -I $(INC_DIR) -c $< -o $@
 
 clean:
 	rm -rf $(TMP_DIR)
+	rm -rf $(LOG_DIR)
 
 fclean: clean
 	rm -f $(NAME)

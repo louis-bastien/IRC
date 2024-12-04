@@ -1,30 +1,47 @@
 #include "Server.hpp"
 
-Server::Server(int port, std::string password) : _port(port), _password(password) {}
+Server::Server(int port, std::string password, Logger& logger) : _port(port), _password(password), _logger(logger) {}
 
-void Server::init(void) {
+Server::~Server() {}
+
+void Server::init() {
     sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(1234);
+    serv_addr.sin_port = htons(_port);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     _serverFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (_serverFd < 0)
+
+    if (_serverFd < 0) {
+        _logger.log(ERROR, "Failed to create server socket");
         throw std::runtime_error("Failed to create server socket");
+    }
+    _logger.log(INFO, "Server socket successfully created");
 
-    if (bind(_serverFd, (const sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(_serverFd, (const sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        _logger.log(ERROR, "Failed to bind server socket");
         throw std::runtime_error("Failed to bind server socket");
-
+    }
+    _logger.log(INFO, "Server socket bound to port " + std::to_string(_port));
+    
     listen(_serverFd, MAX_CONNECTIONS);
+    _logger.log(INFO, "Server listening for connections (max_connections=" + std::to_string(MAX_CONNECTIONS) + ")");
 }
 
 void Server::start(void) {
     epollInit();
+    _logger.log(INFO, "Epoll instance created successfully");
+
     while (true) {
         struct epoll_event events[MAX_EVENTS];
+
         int n = epoll_wait(_epollFd, events, MAX_EVENTS, -1);
-        if (n < 0)
+        _logger.log(DEBUG, "Epoll_wait returned " + std::to_string(n) + " events");
+
+        if (n < 0) {
+            _logger.log(ERROR, "Epoll_wait failed");
             throw std::runtime_error("Epoll_wait failed");
+        }
         for (int i = 0; i < n; i++) {
             if (events[i].data.fd == _serverFd)
                 acceptConnection();
@@ -36,8 +53,10 @@ void Server::start(void) {
 
 void Server::epollInit(void) {
     _epollFd = epoll_create1(0);
-    if (_epollFd < 0)
-        throw std::runtime_error("Failed creat epoll instance");
+    if (_epollFd < 0) {
+        _logger.log(ERROR, "Failed to create epoll instance");
+        throw std::runtime_error("Failed create epoll instance");
+    }
     epollAddFd(_serverFd);
 }
 
@@ -54,12 +73,20 @@ void Server::acceptConnection(void) {
     socklen_t clientAddrSize;
 
     int clientFd = accept(_serverFd, &clientAddr, &clientAddrSize);
-    if (clientFd < 0)
-        throw std::runtime_error("Failed to accept new client");
-
-    User newUser(clientFd, clientAddr);
-    _userMap.insert(std::make_pair(clientFd, newUser));
-    epollAddFd(clientFd);
+    if (clientFd < 0) {
+        _logger.log(WARNING, "Failed to accept new client");
+        return ;
+    }
+    _logger.log(INFO, "Accepted new client with fd " + std::to_string(clientFd));
+    
+    try {
+        User newUser(clientFd, clientAddr);
+        _userMap.insert(std::make_pair(clientFd, newUser));
+        epollAddFd(clientFd);
+    } catch (const std::exception &e) {
+        _logger.log(ERROR, "Error adding new user : " + std::string(e.what()));
+        close(clientFd);
+    }
 }
 
 //Get message only. Parsing/execution done later
@@ -96,9 +123,11 @@ void Server::epollAddFd(int newFd) {
     struct epoll_event epev;
     epev.events = EPOLLIN;
     epev.data.fd  = newFd;
-    if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, newFd, &epev) < 0)
+    if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, newFd, &epev) < 0) {        
+        _logger.log(ERROR, "Failed to add server event to epoll instance");
         throw std::runtime_error("Failed to add server event to epoll instance");
-
+    }
+    _logger.log(DEBUG, "Read event for fd" + std::to_string(newFd) + "added to epoll instance");
 }
 
 const std::string& Server::getPassword(void) const {

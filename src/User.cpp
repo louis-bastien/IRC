@@ -1,4 +1,4 @@
-#include "user.hpp"
+#include "User.hpp"
 
 User::User(int socket_fd) : username(""), nickname("*"), socket_fd(socket_fd),
             is_authenticated(false), is_operator(false) {}

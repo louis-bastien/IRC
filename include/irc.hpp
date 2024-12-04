@@ -1,7 +1,7 @@
 #pragma once
 #include <sstream>
 
-int check_args(int argc, char **argv);
+void check_args(int argc, char **argv);
 
 
 #include <string>
@@ -11,8 +11,6 @@ int check_args(int argc, char **argv);
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <map>
-#include "user.hpp"
-#define BUFFER_SIZE 1024
-#define MAX_EVENTS 24
+#include <cstdlib>
 
 

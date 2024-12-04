@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <map>
 
+#include <Logger.hpp>
 #include <User.hpp>
 //#include <Channel.hpp>
 
@@ -24,7 +25,7 @@ class Server {
         std::string _password;
         int _serverFd;
         int _epollFd;
-
+        Logger& _logger;
         std::map<int, User> _userMap;
         std::map<std::string, Channel> _channelMap;
 
@@ -35,14 +36,13 @@ class Server {
         void handleMessage(std::string message);
 
     public:
-        Server(int port, std::string password);
+        Server(int port, std::string password, Logger& logger);
         ~Server();
 
         const std::string& getPassword(void) const;
 
         void init(void);
         void start(void);
-
         void closeClient(int clientFd);
 };
 

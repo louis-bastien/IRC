@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -8,8 +9,8 @@ enum logLevel {DEBUG, INFO, WARNING, ERROR};
 class Logger {
     private:
         std::ofstream _logFile;
-
         std::string levelToStr(logLevel level);
+
     public:
         Logger(const std::string& filepath);
         ~Logger();
