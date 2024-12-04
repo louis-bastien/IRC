@@ -5,9 +5,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <map>
 
-#include <user.hpp>
-#include <channel.hpp>
+#include <User.hpp>
+//#include <Channel.hpp>
 
 #define BUFFER_SIZE 512
 #define MAX_EVENTS 24
@@ -24,12 +25,14 @@ class Server {
         int _serverFd;
         int _epollFd;
 
-        std::map<int fd, User> _userMap;
+        std::map<int, User> _userMap;
         std::map<std::string, Channel> _channelMap;
 
         void epollInit(void);
         void acceptConnection(void);
         void handleReadEvent(int eventFd);
+        void epollAddFd(int fd);
+        void handleMessage(std::string message);
 
     public:
         Server(int port, std::string password);
