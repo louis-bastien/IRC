@@ -1,18 +1,38 @@
-#include "../include/irc.hpp"
+#include "irc.hpp"
+#include "server.hpp"
+
 
 int main(int argc, char** argv) {
-    
-    if (argc != 3) {
-        std::cout << "Wrong number of arguments. Try the following:" << std::endl;
-        std::cout << "./ircserv 4242 mypassword" << std::endl;
-        return 1;
+    try {
+        check_args(argc, argv);
+        Server ircServer(atoi(argv[1]), argv[2]);
+        ircServer.initServer();
+        ircServer.startServer();
     }
+    catch (std::exception &e) {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
+}
 
-    std::string port(argv[1]);
-    if (port.find_first_not_of("0123456789") != std::string::npos) {
-        std::cout << "Port wrong: use only digits!" << std::endl;
-        return 1;
-    }
+int check_args(int argc, char **argv) {
+    if (argc != 3)
+        throw std::invalid_argument::("Wrong number of arguments");
+
+    std::stringstream ss(argv[1]);
+    int value;
+    ss >> value;
+
+    if (ss.fail() || !ss.eof())
+        throw std::invalid_argument("Port is not a valid int");
+    else if (value < 1024 || value < 65535)
+        throw std::invalid_argument("choose port between 1024 and 65535");
+    
+    std::string password(argv[2]);
+
+    if (password.size() < 5 || password.length() > 12)
+        throw std::invalid_argument("Choose password between 5 and 12 characters");
+}
+
 
     int serv_fd;
     sockaddr_in serv_addr;
@@ -21,20 +41,21 @@ int main(int argc, char** argv) {
     serv_addr.sin_port = htons(1234);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (serv_fd < 0)
+    if (serv_fd < 0) {
         std::cout << "Failed to create socket" << std::endl;
+        return 1;
+    }
     if (bind(serv_fd, (const sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         std::cout << "Bind failed" << std::endl;
             return 1;
     }
+
     listen(serv_fd, 5);
     
     int epoll_fd = epoll_create1(0);
     struct epoll_event epev;
     epev.events = EPOLLIN;
     epev.data.fd  = serv_fd;
-
-
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serv_fd, &epev);
 
     while (1) {
