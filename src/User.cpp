@@ -1,4 +1,6 @@
 #include "User.hpp"
+// CREATE A FUNCTION LEAVE ALL CHANNELS!!!!
+
 
 User::User(int socket_fd) : username(""), nickname("*"), socket_fd(socket_fd),
             is_authenticated(false), is_operator(false) {}
@@ -67,11 +69,6 @@ void User::authenticate()
     if (is_authenticated) 
         sendMessage("433 ERR_ALREADYREGISTERED: Already authenticated.");
     this->is_authenticated = true;
-}
-
-bool User::isOperator()
-{
-    return(this->is_operator);
 }
 
 

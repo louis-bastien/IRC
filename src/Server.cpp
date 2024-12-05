@@ -80,7 +80,7 @@ void Server::acceptConnection(void) {
     _logger.log(INFO, "Accepted new client with fd " + std::to_string(clientFd));
     
     try {
-        User newUser(clientFd, clientAddr);
+        User newUser(clientFd);
         _userMap.insert(std::make_pair(clientFd, newUser));
         epollAddFd(clientFd);
     } catch (const std::exception &e) {
@@ -113,6 +113,7 @@ void Server::handleReadEvent(int eventFd) {
 
 void Server::closeClient(int clientFd) {
     epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+    s
     _userMap.erase(clientFd);
     if (close(clientFd) < 0)
         throw std::runtime_error("Failed to close client fd");

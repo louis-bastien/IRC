@@ -41,7 +41,6 @@ class User
         std::string nickname;
         int socket_fd; //client's socket
         bool is_authenticated; //is nick and user commands are verified
-        bool is_operator;
         std::vector<std::string> channels;
     
     public:
@@ -53,7 +52,6 @@ class User
         void setUsername(const std::string& username);
         bool isAuthenticated() const;
         void authenticate();
-        bool isOperator();
         void sendMessage(const std::string& message);
         void sendPrivateMessage(const std::string& target, const std::string& message);
         std::string receiveMessage();
