@@ -60,14 +60,6 @@ void Server::epollInit(void) {
     epollAddFd(_serverFd);
 }
 
-//We need to work on how to add/handle new users
-//I assume User can be instantiated with only its associated socket fd;
-//We also need to figur out what to do with the client's address
-//RFC says:
-//  all servers must have the
-//  following information about all clients: the real name of the host
-//  that the client is running on, the username of the client on that
-//  host, and the server to which the client is connected.
 void Server::acceptConnection(void) {
     struct sockaddr clientAddr;
     socklen_t clientAddrSize;
@@ -113,7 +105,7 @@ void Server::handleReadEvent(int eventFd) {
         }
     }
     _logger.log(DEBUG, "Message received from client fd " + std::to_string(eventFd) + ": " + message);
-    //handleMessage(message);
+    handleMessage(message);
 }
 
 void Server::closeClient(int clientFd) {
