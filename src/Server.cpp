@@ -74,18 +74,18 @@ void Server::acceptConnection(void) {
 
     int clientFd = accept(_serverFd, &clientAddr, &clientAddrSize);
     if (clientFd < 0) {
-        _logger.log(WARNING, "Failed to accept new client");
+        _logger.log(WARNING, "Failed to accept new client fd=" + std::to_string(clientFd));
         return ;
     }
-    _logger.log(INFO, "Accepted new client with fd " + std::to_string(clientFd));
-    
+    _logger.log(INFO, "Accepted new client fd=" + std::to_string(clientFd));
+
     try {
         User newUser(clientFd, clientAddr);
         _userMap.insert(std::make_pair(clientFd, newUser));
         epollAddFd(clientFd);
     } catch (const std::exception &e) {
         _logger.log(ERROR, "Error adding new user : " + std::string(e.what()));
-        close(clientFd);
+        closeClient(clientFd);
     }
 }
 
@@ -98,25 +98,31 @@ void Server::handleReadEvent(int eventFd) {
         int bytes_read = read(eventFd, buffer, sizeof(buffer));
         if (bytes_read < 0) {
             closeClient(eventFd);
-            throw std::runtime_error("Failed to read from client fd");
+            _logger.log(ERROR, "Failed to read from client");
+            return;
         }
-        else if (bytes_read == 0)
+        else if (bytes_read == 0) {
             closeClient(eventFd);
+            _logger.log(INFO, "Connection terminated by client");
+            return;
+        }
         else {
             message.append(buffer, bytes_read);
             if (message.find("\r\n") != std::string::npos)
                 break;
         }
     }
-    handleMessage(message);
+    _logger.log(DEBUG, "Message received from client fd " + std::to_string(eventFd) + ": " + message);
+    //handleMessage(message);
 }
 
 void Server::closeClient(int clientFd) {
-    epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-    _userMap.erase(clientFd);
+    if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL) < 0)
+        _logger.log(ERROR, "Failed to delete fd " + std::to_string(clientFd) + " from epoll");
     if (close(clientFd) < 0)
-        throw std::runtime_error("Failed to close client fd");
-    //also need to remove the user from all channels
+        _logger.log(ERROR, "Failed to close fd " + std::to_string(clientFd));
+    _userMap.erase(clientFd);
+    _logger.log(INFO, "Closed client with fd " + std::to_string(clientFd) + " successfully");
 }
 
 void Server::epollAddFd(int newFd) {
