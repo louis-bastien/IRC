@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Message.hpp"
 
 Server::Server(int port, std::string password, Logger& logger) : _port(port), _password(password), _logger(logger) {}
 
@@ -84,7 +85,8 @@ void Server::acceptConnection(void) {
 //Get message only. Parsing/execution done later
 void Server::handleReadEvent(int eventFd) {
     char buffer[BUFFER_SIZE];
-    std::string message;
+    std::string rawMessage;
+
 
     while (true) {
         int bytes_read = read(eventFd, buffer, sizeof(buffer));
@@ -99,13 +101,14 @@ void Server::handleReadEvent(int eventFd) {
             return;
         }
         else {
-            message.append(buffer, bytes_read);
-            if (message.find("\r\n") != std::string::npos)
+            rawMessage.append(buffer, bytes_read);
+            if (rawMessage.find("\r\n") != std::string::npos)
                 break;
         }
     }
-    _logger.log(DEBUG, "Message received from client fd " + std::to_string(eventFd) + ": " + message);
-    handleMessage(message);
+    _logger.log(DEBUG, "Raw message received from client fd " + std::to_string(eventFd) + ": " + rawMessage);
+    Message msg(rawMessage);
+    msg.logMsg(_logger);
 }
 
 void Server::closeClient(int clientFd) {
