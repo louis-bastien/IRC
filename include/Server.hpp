@@ -9,6 +9,7 @@
 
 #include <Logger.hpp>
 #include <User.hpp>
+#include <Utils.hpp>
 //#include <Channel.hpp>
 
 #define BUFFER_SIZE 512
@@ -27,7 +28,7 @@ class Server {
         int _epollFd;
         Logger& _logger;
         std::map<int, User> _userMap;
-        std::map<std::string, Channel> _channelMap;
+//        std::map<std::string, Channel> _channelMap;
 
         void epollInit(void);
         void acceptConnection(void);

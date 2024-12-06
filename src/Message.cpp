@@ -32,9 +32,10 @@ void Message::exctractParams(std::istringstream& ss) {
     std::string token;
     
     while (ss >> token) {
-        if (token[0] == ':')
+        if (token[0] == ':') {
             _trailing = token.substr(1);
             break;
+        }
         _params.push_back(token);
     }       
 }

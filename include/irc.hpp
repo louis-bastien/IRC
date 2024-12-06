@@ -1,9 +1,6 @@
 #pragma once
 #include <sstream>
-
-void check_args(int argc, char **argv);
-
-
+#include "Logger.hpp"
 #include <string>
 #include <iostream>
 #include <sys/socket.h>
@@ -13,4 +10,5 @@ void check_args(int argc, char **argv);
 #include <map>
 #include <cstdlib>
 
+void check_args(int argc, char **argv, Logger& logger);
 

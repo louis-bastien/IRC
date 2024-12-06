@@ -21,6 +21,5 @@ class Message {
     
     public:
         Message(const std::string& rawMessage);
-
         void logMsg(Logger& logger);
 };

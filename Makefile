@@ -7,7 +7,7 @@ TMP_DIR = tmp/
 LOG_DIR = log/
 
 
-SRCS = irc.cpp User.cpp Logger.cpp Server.cpp
+SRCS = irc.cpp User.cpp Logger.cpp Server.cpp Message.cpp
 OBJS = $(addprefix $(TMP_DIR), $(SRCS:.cpp=.o))
 DEPS = $(OBJS:.o=.d)
 
@@ -15,7 +15,7 @@ NAME = ircserv
 
 DFLAGS = -MMD -MP
 
-all: $(TMP_DIR) $(NAME)
+all: $(TMP_DIR) $(LOG_DIR) $(NAME)
 
 $(NAME): $(OBJS)
 	$(CC) $(FLAGS) $(OBJS) -o $(NAME)
