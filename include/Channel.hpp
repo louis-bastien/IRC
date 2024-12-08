@@ -4,7 +4,6 @@
 #include "Server.hpp"
 #include "Logger.hpp"
 
-//he
 
 class Channel
 {
@@ -22,5 +21,4 @@ class Channel
         void setTopic(const std::string& topic);
         std::string& getTopic() const;
         bool is_operator(User& user);
-
 };

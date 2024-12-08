@@ -1,6 +1,4 @@
 #include "User.hpp"
-// CREATE A FUNCTION LEAVE ALL CHANNELS!!!!
-
 
 User::User(int socket_fd) : username(""), nickname("*"), socket_fd(socket_fd),
             is_authenticated(false), is_operator(false) {}
@@ -10,7 +8,10 @@ std::string User::getNickname() const
     return (this->nickname);
 }
 
-User::~User(){}
+User::~User()
+{
+    leaveAllChannels();
+}
 
 // here i only check certain parameters, but i DONT check if the nickname already exists, 
 //it should be done in server or a channel
@@ -18,21 +19,34 @@ User::~User(){}
 
 void User::setNickname(const std::string& nickname)
 {
-    if (nickname.empty()) 
+   if (nickname.empty()) {
         sendMessage("431 ERR_NONICKNAMEGIVEN: No nickname provided.");
-    if (nickname.length() > 9)
+        logger.log(WARNING, "Attempted to set an empty nickname.");
+        return;
+    }
+    if (nickname.length() > 9) {
         sendMessage("432 ERR_ERRONEUSNICKNAME: Nickname is too long.");
+        logger.log(WARNING, "Nickname too long: " + new_nickname);
+        return;
+    }
     if (!(isalpha(nickname[0]) || nickname[0] == '-' || nickname[0] == '[' || nickname[0] == ']' ||
-        nickname[0] == '\\' || nickname[0] == '^' || nickname[0] == '_'))
-        sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid first character.");
+        nickname[0] == '\\' || nickname[0] == '^' || nickname[0] == '_')) {
+        sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid first character in nickname.");
+        logger.log(WARNING, "Invalid nickname first character: " + new_nickname);
+        return;
+    }
     for (std::string::size_type i = 0; i < nickname.length(); ++i) 
     {
         char c = nickname[i];
         if (!(isalnum(c) || c == '-' || c == '[' || c == ']' ||
-        c == '\\' || c == '^' || c == '_'))
+        c == '\\' || c == '^' || c == '_')) {
             sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid character in nickname.");
+            logger.log(WARNING, "Invalid character in nickname: " + new_nickname);
+            return;
+        }
     }
     this->nickname = nickname;
+    logger.log(INFO, "Nickname set to " + nickname);
 }
 
 std::string User::getUsername() const
@@ -44,17 +58,27 @@ std::string User::getUsername() const
 //same as in nickname, not all params are checked and need to pront msgs either here or somewhere
 void User::setUsername(const std::string& username)
 {
-    if (username.empty())
-        sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid username.");
-    if (!isalpha(username[0]) && username[0] != '-')
-        sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid username.");
+    if (username.empty()) {
+        sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
+        logger.log(WARNING, "Attempted to set an empty username.");
+        return;
+    }
+    if (!isalpha(username[0]) && username[0] != '-'){
+        sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
+        logger.log(WARNING, "Attempted to set invalid username.");
+        return;
+    }
     for (std::string::size_type i = 0; i < nickname.length(); ++i)
     {
         char c = nickname[i];
-        if (!isalnum(c) && c != '-' && c != '_' && c != '.') 
-        sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid username.");
+        if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
+            sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
+            logger.log(WARNING, "Attempted to set an empty username.");
+            return;
+        }
     }
     this->username = username;
+    logger.log(INFO, "Username set to " + username);
 }
 
 bool User::isAuthenticated() const
@@ -66,9 +90,13 @@ bool User::isAuthenticated() const
 
 void User::authenticate()
 {
-    if (is_authenticated) 
+    if (is_authenticated) {
         sendMessage("433 ERR_ALREADYREGISTERED: Already authenticated.");
+        logger.log(WARNING, "User attempted re-authentication.");
+        return;
+    }
     this->is_authenticated = true;
+    logger.log(INFO, "User authenticated successfully.");
 }
 
 
@@ -78,10 +106,31 @@ void User::sendMessage(const std::string& message)
     std::string formattedMessage = ":ircserv " + message + "\r\n";
     
     if (send(socket_fd, formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
-        std::cerr << "Failed to send message to user: " << std::endl;
+        logger.log(ERROR, "Failed to send message: " + message);
 }
 
+void User::joinChannel(Channel& channel) 
+{
+    channel.addUser(*this);
+    channels.push_back(channel.getName());
+    logger.log(INFO, nickname + " joined channel " + channel.getName());
+}
 
+void User::leaveChannel(Channel& channel) 
+{
+    channel.removeUser(*this);
+    channels.erase(std::remove(channels.begin(), channels.end(), channel.getName()), channels.end());
+    logger.log(INFO, nickname + " left channel " + channel.getName());
+}
 
-
-
+void User::leaveAllChannels(std::map<std::string, Channel>& allChannels) 
+{
+    for (std::vector<std::string>::iterator it = channels.begin(); it != channels.end(); ++it) 
+    {
+        std::map<std::string, Channel>::iterator channelIt = allChannels.find(*it);
+        if (channelIt != allChannels.end()) 
+            channelIt->second.removeUser(*this);
+    }
+    channels.clear();
+    logger.log(INFO, nickname + " left all channels.");
+}

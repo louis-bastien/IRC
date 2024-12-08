@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
+#include "Channel.hpp"
 
 /*
 -nickname - max 9 chars;
@@ -39,7 +40,7 @@ class User
     private:
         std::string username;
         std::string nickname;
-        int socket_fd; //client's socket
+        int socket_fd;
         bool is_authenticated; //is nick and user commands are verified
         std::vector<std::string> channels;
     
@@ -53,8 +54,7 @@ class User
         bool isAuthenticated() const;
         void authenticate();
         void sendMessage(const std::string& message);
-        void sendPrivateMessage(const std::string& target, const std::string& message);
-        std::string receiveMessage();
-        void joinChannel(const std::string& channel_name);
-        void leaveChannel(const std::string& channel_name);
+        void joinChannel(Channel& channel);
+        void leaveChannel(Channel& channel);
+        void leaveAllChannels(std::map<std::string, Channel>& allChannels);
 };
