@@ -15,7 +15,7 @@ User::~User()
 
 // here i only check certain parameters, but i DONT check if the nickname already exists, 
 //it should be done in server or a channel
-// i think i need to pront messages here like "... set their name as ..." , but not sure if to do it here
+// i think i need to prompt messages here like "... set their name as ..." , but not sure if to do it here
 
 void User::setNickname(const std::string& nickname)
 {
@@ -55,7 +55,7 @@ std::string User::getUsername() const
 }
 
 
-//same as in nickname, not all params are checked and need to pront msgs either here or somewhere
+//same as in nickname, not all params are checked and need to promt msgs either here or somewhere
 void User::setUsername(const std::string& username)
 {
     if (username.empty()) {
