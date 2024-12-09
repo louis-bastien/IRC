@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <map>
+#include <csignal>
 
 #include <Logger.hpp>
 #include <User.hpp>
@@ -27,6 +28,7 @@ class Server {
         int _serverFd;
         int _epollFd;
         Logger& _logger;
+        static int _pipeFd[2];
         std::map<int, User> _userMap;
 //        std::map<std::string, Channel> _channelMap;
 
@@ -45,7 +47,6 @@ class Server {
         void init(void);
         void start(void);
         void closeClient(int clientFd);
+        static void signalHandler(int sign);
 };
-
-
 

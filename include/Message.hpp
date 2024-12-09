@@ -14,12 +14,17 @@ class Message {
         std::vector<std::string> _params;
         
         void parse(const std::string& rawMessage);
-        void exctractPrefix(std::istringstream& ss);
-        void exctractCommand(std::istringstream& ss);
-        void exctractParams(std::istringstream& ss);
-        void exctractTrailing(std::istringstream& ss);
+        void extractPrefix(std::istringstream& ss);
+        void extractCommand(std::istringstream& ss);
+        void extractParamsAndTrailing(std::istringstream& ss);
     
     public:
         Message(const std::string& rawMessage);
+
+        const std::string& getPrefix(void) const;
+        const std::string& getCommand(void) const;
+        const std::string& getTrailing(void) const;
+        const std::vector<std::string>& getParams(void) const; 
+
         void logMsg(Logger& logger);
 };

@@ -6,42 +6,59 @@ Message::Message(const std::string& rawMessage) {
 }
 
 void Message::parse(const std::string& rawMessage) {
-    std::istringstream ss(rawMessage);
+    if (rawMessage.empty())
+        throw std::invalid_argument("Raw message cannot be empty");
 
+    std::istringstream ss(rawMessage);
     if (rawMessage[0] == ':')
-        exctractPrefix(ss);
-    exctractCommand(ss);
-    exctractParams(ss);
+        extractPrefix(ss);
+    extractCommand(ss);
+    extractParamsAndTrailing(ss);
 }
 
-void Message::exctractPrefix(std::istringstream& ss) {
+void Message::extractPrefix(std::istringstream& ss) {
     std::string token;
     
     ss >> token;
     _prefix = token.substr(1);
 }
 
-void Message::exctractCommand(std::istringstream& ss) {
+void Message::extractCommand(std::istringstream& ss) {
     std::string token;
     
     ss >> token;
     _command = token;
+
+    if (_command.empty())
+        throw std::invalid_argument("Command is missing");
 }
 
-void Message::exctractParams(std::istringstream& ss) {
+void Message::extractParamsAndTrailing(std::istringstream& ss) {
     std::string token;
     
     while (ss >> token) {
         if (token[0] == ':') {
-            _trailing = token.substr(1);
+            std::getline(ss, _trailing);
+            _trailing = _trailing.substr(1);
             break;
         }
         _params.push_back(token);
     }       
 }
 
-void Message::exctractTrailing(std::istringstream& ss) {
-    _trailing += ss.str();
+const std::string& Message::getPrefix(void) const {
+    return(_prefix);
+}
+const std::string& Message::getCommand(void) const {
+    return(_command);    
+}
+
+const std::string& Message::getTrailing(void) const {
+    return(_trailing);
+}
+
+const std::vector<std::string>& Message::getParams(void) const {
+    return(_params);
 }
 
 void Message::logMsg(Logger& logger) {
@@ -52,7 +69,8 @@ void Message::logMsg(Logger& logger) {
     std::stringstream ss;
     std::vector<std::string>::iterator it;
     for (it = _params.begin(); it != _params.end(); it++) 
-        ss << *it;
+        ss << *it << " ";
     logger.log(DEBUG," #params=" + ss.str());
     logger.log(DEBUG," #trailing=" + _trailing);    
 }
+
