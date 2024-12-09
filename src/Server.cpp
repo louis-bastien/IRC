@@ -1,6 +1,9 @@
 #include "Server.hpp"
 #include "Message.hpp"
 
+//Satic pipe fds used for signal handling with Epoll. 
+int Server::_pipeFd[2] = {-1, -1};
+
 Server::Server(int port, std::string password, Logger& logger) : _port(port), _password(password), _logger(logger) {
     _logger.log(INFO, "starting server on port " + Utils::toString(_port) + " with password '" + _password + "'");
 }
@@ -11,7 +14,7 @@ Server::~Server() {
         if (close(it->first) < 0) 
             _logger.log(ERROR, "fd " + Utils::toString(it->first) + " failed to close");
         else
-            _logger.log(DEBUG, "fd " + Utils::toString(it->first) + " closed");
+            _logger.log(DEBUG, "Client fd " + Utils::toString(it->first) + " closed");
     }
 
     if (close (_epollFd) < 0)
@@ -19,8 +22,11 @@ Server::~Server() {
 
     if (close (_serverFd) < 0)
         _logger.log(ERROR, "Server fd failed to close");
+    
+    if (close(_pipeFd[0]) < 0 || close(_pipeFd[1]) < 0)
+        _logger.log(ERROR, "Failed to close pipe ends");
 
-    _logger.log(INFO, "Server object has been destroyed");
+    _logger.log(DEBUG, "Server instance destroyed");
 }
 
 void Server::init() {
@@ -45,11 +51,22 @@ void Server::init() {
     
     listen(_serverFd, MAX_CONNECTIONS);
     _logger.log(INFO, "Server listening for connections (max_connections=" + Utils::toString(MAX_CONNECTIONS) + ")");
+
+    if (pipe(_pipeFd) < 0) {
+        _logger.log(ERROR, "Failed to create pipe for signal handling");
+        throw std::runtime_error("Failed to create pipe for signal handling");
+    }
+
 }
 
 void Server::start(void) {
     epollInit();
-    _logger.log(INFO, "Epoll instance created successfully. Waiting for events...");
+    _logger.log(INFO, "Epoll instance created.");
+    
+    signal(SIGINT, signalHandler);
+    epollAddFd(_pipeFd[0]);
+    _logger.log(INFO, "Signal handler setup and read-end added to epoll instance.");
+    _logger.log(INFO, "Waiting for events to occur...");
 
     while (true) {
         struct epoll_event events[MAX_EVENTS];
@@ -58,16 +75,32 @@ void Server::start(void) {
         _logger.log(DEBUG, "Epoll_wait returned " + Utils::toString(n) + " events");
 
         if (n < 0) {
+            if (errno == EINTR) {
+            //If a SIGINT is received, continue the loop to detect the read event from the signal pipe
+                _logger.log(WARNING, "Epoll_wait interrupted by signal");
+                continue;
+            }
             _logger.log(ERROR, "Epoll_wait failed");
             throw std::runtime_error("Epoll_wait failed");
         }
         for (int i = 0; i < n; i++) {
             if (events[i].data.fd == _serverFd)
                 acceptConnection();
+            else if (events[i].data.fd == _pipeFd[0]) {
+                char buf[1];
+                read(_pipeFd[0], &buf, 1);
+                _logger.log(INFO, "Signal received. Shutting down server...");
+                return;
+            }
             else if (events[i].events & EPOLLIN)
                 handleReadEvent(events[i].data.fd);
         }
     }
+}
+
+void Server::signalHandler(int sign) {
+    if (sign == SIGINT || sign == SIGQUIT)
+        write(_pipeFd[1], "0", 1);
 }
 
 void Server::epollInit(void) {
@@ -105,7 +138,6 @@ void Server::acceptConnection(void) {
     }
 }
 
-//Get message only. Parsing/execution done later
 void Server::handleReadEvent(int eventFd) {
     char buffer[BUFFER_SIZE];
     std::string rawMessage;
