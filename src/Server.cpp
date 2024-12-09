@@ -14,7 +14,7 @@ Server::~Server() {
         if (close(it->first) < 0) 
             _logger.log(ERROR, "fd " + Utils::toString(it->first) + " failed to close");
         else
-            _logger.log(DEBUG, "fd " + Utils::toString(it->first) + " closed");
+            _logger.log(DEBUG, "Client fd " + Utils::toString(it->first) + " closed");
     }
 
     if (close (_epollFd) < 0)
