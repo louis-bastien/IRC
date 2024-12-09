@@ -9,8 +9,19 @@ std::string User::getNickname() const
 }
 
 User::~User()
+{}
+
+User& User::operator=(const User& other) 
 {
-    leaveAllChannels();
+    if (this != &other)
+    {
+        username = other.username;
+        nickname = other.nickname;
+        socket_fd = other.socket_fd;
+        is_authenticated = other.is_authenticated;
+        channels = other.channels;
+    }
+    return (*this);
 }
 
 // here i only check certain parameters, but i DONT check if the nickname already exists, 
@@ -109,6 +120,7 @@ void User::sendMessage(const std::string& message)
         logger.log(ERROR, "Failed to send message: " + message);
 }
 
+
 void User::joinChannel(Channel& channel) 
 {
     channel.addUser(*this);
@@ -137,5 +149,5 @@ void User::leaveAllChannels(std::map<std::string, Channel>& allChannels)
 
 int User::getSocketFd()
 {
-    return (socket_fd);
+    return(this->socket_fd);
 }

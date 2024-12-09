@@ -23,6 +23,7 @@ class User
     public:
         User(int socket_fd, Logger& Logger);
         ~User();
+        User& operator=(const User& other);
         std::string getNickname() const;
         void setNickname(const std::string& nickname);
         std::string getUsername() const;
@@ -31,7 +32,7 @@ class User
         void sendMessage(const std::string& message);
         void joinChannel(Channel& channel);
         void leaveChannel(Channel& channel);
-        int getSocketFd() const;
         void authenticate();
+        int getSocketFd();
         void leaveAllChannels(std::map<std::string, Channel>& allChannels);
 };
