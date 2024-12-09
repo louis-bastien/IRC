@@ -1,7 +1,7 @@
 #include "Logger.hpp"
 
 Logger::Logger(const std::string& filepath) {
-    _logFile.open(filepath.c_str(), std::ofstream::app);
+    _logFile.open(filepath.c_str(), std::ofstream::app | std::fstream::out);
     if (!_logFile.is_open()) {
         throw std::runtime_error("Failed to open log file");
     }
