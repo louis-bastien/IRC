@@ -5,8 +5,10 @@
 Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(false)
 {
     if (name.empty() || name.length() > 200 || 
-        name[0] != '#' && name[0] != '&' ||
-        name.find(' ') != std::string::npos || name.find('\a') != std::string::npos || name.find(',') != std::string::npos) 
+        (name[0] != '#' && name[0] != '&') ||
+        name.find(' ') != std::string::npos || 
+        name.find('\a') != std::string::npos || 
+        name.find(',') != std::string::npos)
     {
         logger.log(ERROR, "Invalid channel name: " + name);
         this->name = ""; 
@@ -22,10 +24,10 @@ Channel::~Channel()
 
 void Channel::addUser(User& user) 
 {
-    members[user.getSocketFd()] = user;
+    members.insert(std::make_pair(user.getSocketFd(), user));
     if (members.size() == 1) 
     {
-        operators[user.getSocketFd()] = user;
+        operators.insert(std::make_pair(user.getSocketFd(), user));
         logger.log(INFO, user.getNickname() + " is the operator of the channel " + name);
     }
     logger.log(INFO, user.getNickname() + " joined channel " + name);

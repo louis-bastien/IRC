@@ -96,7 +96,7 @@ void Server::acceptConnection(void) {
     _logger.log(DEBUG, "IP [" + ipAddrStr + "] Port [" + portStr +"]");
 
     try {
-        User newUser(clientFd);
+        User newUser(clientFd, _logger);
         _userMap.insert(std::make_pair(clientFd, newUser));
         epollAddFd(clientFd);
     } catch (const std::exception &e) {

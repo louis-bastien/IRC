@@ -10,7 +10,7 @@ void Message::parse(const std::string& rawMessage) {
 
     if (rawMessage[0] == ':')
         exctractPrefix(ss);
-    exctractCommand(ss);rawMessage
+    exctractCommand(ss);
     exctractParams(ss);
 }
 

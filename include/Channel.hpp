@@ -5,6 +5,7 @@
 #include "Logger.hpp"
 #include <algorithm> 
 
+class User;
 
 class Channel
 {

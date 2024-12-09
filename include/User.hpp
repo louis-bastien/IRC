@@ -10,6 +10,10 @@
 #include "Channel.hpp"
 #include "Logger.hpp"
 
+
+class Channel;
+
+
 class User
 {
     private:
@@ -21,7 +25,7 @@ class User
         Logger& logger;
     
     public:
-        User(int socket_fd, Logger& Logger);
+        User(int socket_fd, Logger& logger);
         ~User();
         User& operator=(const User& other);
         std::string getNickname() const;
