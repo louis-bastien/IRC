@@ -12,9 +12,10 @@ class Channel
         std::map<int, User> operators;
         std::map<int, User> members;
         std::string topic;
+        Logger& logger;
 
     public:
-        Channel(std::string& name);
+        Channel(std::string& name, Logger& logger);
         ~Channel();
         void addUser(User& user);
         void removeUser(User&user);

@@ -1,7 +1,7 @@
 #include "User.hpp"
 
-User::User(int socket_fd) : username(""), nickname("*"), socket_fd(socket_fd),
-            is_authenticated(false), is_operator(false) {}
+User::User(int socket_fd, Logger& logger) : username(""), nickname("*"), socket_fd(socket_fd),
+            is_authenticated(false), logger(logger) {}
 
 std::string User::getNickname() const
 {
@@ -26,13 +26,13 @@ void User::setNickname(const std::string& nickname)
     }
     if (nickname.length() > 9) {
         sendMessage("432 ERR_ERRONEUSNICKNAME: Nickname is too long.");
-        logger.log(WARNING, "Nickname too long: " + new_nickname);
+        logger.log(WARNING, "Nickname too long: " + nickname);
         return;
     }
     if (!(isalpha(nickname[0]) || nickname[0] == '-' || nickname[0] == '[' || nickname[0] == ']' ||
         nickname[0] == '\\' || nickname[0] == '^' || nickname[0] == '_')) {
         sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid first character in nickname.");
-        logger.log(WARNING, "Invalid nickname first character: " + new_nickname);
+        logger.log(WARNING, "Invalid nickname first character: " + nickname);
         return;
     }
     for (std::string::size_type i = 0; i < nickname.length(); ++i) 
@@ -41,7 +41,7 @@ void User::setNickname(const std::string& nickname)
         if (!(isalnum(c) || c == '-' || c == '[' || c == ']' ||
         c == '\\' || c == '^' || c == '_')) {
             sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid character in nickname.");
-            logger.log(WARNING, "Invalid character in nickname: " + new_nickname);
+            logger.log(WARNING, "Invalid character in nickname: " + nickname);
             return;
         }
     }
@@ -133,4 +133,9 @@ void User::leaveAllChannels(std::map<std::string, Channel>& allChannels)
     }
     channels.clear();
     logger.log(INFO, nickname + " left all channels.");
+}
+
+int User::getSocketFd()
+{
+    return (socket_fd);
 }

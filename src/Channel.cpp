@@ -1,7 +1,6 @@
 #include "Channel.hpp"
-#include "User.hpp"
 
-Channel::Channel(std::string& name) : name(name), topic("") 
+Channel::Channel(std::string& name, Logger& logger) : name(name), topic("") 
 {
     logger.log(INFO, "Channel created: " + name);
 }

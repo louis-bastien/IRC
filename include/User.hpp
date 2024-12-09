@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <cstring>
 #include "Channel.hpp"
+#include "Logger.hpp"
 
 class User
 {
@@ -17,9 +18,10 @@ class User
         int socket_fd;
         bool is_authenticated; //if nick and user commands are verified
         std::vector<std::string> channels;
+        Logger& logger;
     
     public:
-        User(int socket_fd);
+        User(int socket_fd, Logger& Logger);
         ~User();
         std::string getNickname() const;
         void setNickname(const std::string& nickname);
@@ -29,5 +31,7 @@ class User
         void sendMessage(const std::string& message);
         void joinChannel(Channel& channel);
         void leaveChannel(Channel& channel);
+        int getSocketFd() const;
+        void authenticate();
         void leaveAllChannels(std::map<std::string, Channel>& allChannels);
 };
