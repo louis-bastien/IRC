@@ -13,7 +13,7 @@
 #include <Utils.hpp>
 //#include <Channel.hpp>
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1 //Do not increase to avoid command overflowing
 #define MAX_EVENTS 24
 #define MAX_CONNECTIONS 100
 #define MAX_CLIENTS 10
@@ -36,13 +36,15 @@ class Server {
         void acceptConnection(void);
         void handleReadEvent(int eventFd);
         void epollAddFd(int fd);
-        void handleMessage(std::string message);
+        void handleMessage(int clientFd, std::string& rawMessage);
 
     public:
         Server(int port, std::string password, Logger& logger);
         ~Server();
 
         const std::string& getPassword(void) const;
+        Logger& getLogger(void) const;
+        std::map<int, User>& getUserMap(void);
 
         void init(void);
         void start(void);

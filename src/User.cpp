@@ -1,7 +1,7 @@
 #include "User.hpp"
 
 User::User(int socket_fd, Logger& logger) : username(""), nickname("*"), socket_fd(socket_fd),
-            is_authenticated(false), logger(logger) {}
+            is_authenticated(false),is_registered(false), logger(logger) {}
 
 std::string User::getNickname() const
 {
@@ -97,6 +97,11 @@ bool User::isAuthenticated() const
     return(is_authenticated);
 }
 
+bool User::isRegistered() const
+{
+    return(is_registered);
+}
+
 // i think this has to also be done outside user to verify the password, or here with 2 params, expected pass and given by the user pass where we compare them
 
 void User::authenticate()
@@ -115,9 +120,9 @@ void User::authenticate()
 void User::sendMessage(const std::string& message)
 {
     std::string formattedMessage = ":ircserv " + message + "\r\n";
-    
     if (send(socket_fd, formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
         logger.log(ERROR, "Failed to send message: " + message);
+    logger.log(DEBUG, "Sent message '" + message + "' to client fd=" + Utils::toString(socket_fd));    
 }
 
 

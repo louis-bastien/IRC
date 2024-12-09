@@ -7,7 +7,7 @@ TMP_DIR = tmp/
 LOG_DIR = log/
 
 
-SRCS = irc.cpp User.cpp Logger.cpp Server.cpp Message.cpp Channel.cpp
+SRCS = irc.cpp User.cpp Logger.cpp Server.cpp Message.cpp MessageHandler.cpp Channel.cpp
 OBJS = $(addprefix $(TMP_DIR), $(SRCS:.cpp=.o))
 DEPS = $(OBJS:.o=.d)
 
