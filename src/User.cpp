@@ -79,9 +79,9 @@ void User::setUsername(const std::string& username)
         logger.log(WARNING, "Attempted to set invalid username.");
         return;
     }
-    for (std::string::size_type i = 0; i < nickname.length(); ++i)
+    for (std::string::size_type i = 0; i < username.length(); ++i)
     {
-        char c = nickname[i];
+        char c = username[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
             sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
             logger.log(WARNING, "Attempted to set an empty username.");
