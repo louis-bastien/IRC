@@ -44,6 +44,12 @@ void Server::init() {
     }
     _logger.log(INFO, "Server socket successfully created");
 
+    int opt = 1;
+    if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        _logger.log(ERROR, "Failed to set SO_REUSEADDR on server socket");
+        throw std::runtime_error("Failed to set SO_REUSEADDR on server socket");
+    }
+
     if (bind(_serverFd, (const sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         _logger.log(ERROR, "Failed to bind server socket");
         throw std::runtime_error("Failed to bind server socket");
@@ -173,7 +179,7 @@ void Server::handleMessage(int clientFd, std::string& rawMessage) {
         MessageHandler::validateAndDispatch(clientFd, msg, *this);
     }
     catch (std::exception &e) { 
-        _logger.log(WARNING, "Error processing message: " + Utils::toString(e.what()) + ". Skiping...");
+        _logger.log(WARNING, "Error processing message: " + Utils::toString(e.what()) + ". Skipping...");
     }
 }
 

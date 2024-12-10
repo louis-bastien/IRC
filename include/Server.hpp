@@ -30,7 +30,7 @@ class Server {
         Logger& _logger;
         static int _pipeFd[2];
         std::map<int, User> _userMap;
-//        std::map<std::string, Channel> _channelMap;
+        std::map<std::string, Channel> _channelMap;
 
         void epollInit(void);
         void acceptConnection(void);

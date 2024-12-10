@@ -34,10 +34,13 @@ class User
         std::string getUsername() const;
         void setUsername(const std::string& username);
         bool isAuthenticated() const;
+        bool isRegistered() const;
         void sendMessage(const std::string& message);
         void joinChannel(Channel& channel);
         void leaveChannel(Channel& channel);
+        bool canRegister() const;
         void authenticate();
+        void doRegister();
         int getSocketFd();
         void leaveAllChannels(std::map<std::string, Channel>& allChannels);
 };
