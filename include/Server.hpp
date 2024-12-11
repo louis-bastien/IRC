@@ -45,6 +45,7 @@ class Server {
         const std::string& getPassword(void) const;
         Logger& getLogger(void) const;
         std::map<int, User>& getUserMap(void);
+        std::map<std::string, Channel>& getChannelMap(void);
 
         void init(void);
         void start(void);

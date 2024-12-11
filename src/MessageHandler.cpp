@@ -70,11 +70,38 @@ void MessageHandler::_handlePING(User& user, const Message& message, Server& ser
 }
 
 void MessageHandler::_handleJOIN(User& user, const Message& message, Server& server) {
-    if (!_validatePASS(message))
-        throw std::invalid_argument("Wrong command format for JOIN");    
+    if (!_validateJOIN(message))
+        throw std::invalid_argument("Wrong command format for JOIN");  
     if (!_isRegistered(user, message.getCommand(), server)) return;
-    
+
+    std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
+    std::vector<std::string> keys = Utils::split(message.getParams()[1], ',');
+    std::map<std::string, Channel>& channelMap = server.getChannelMap();
+
+    while(!channelNames.empty()) {
+        std::string currentChannel = channelNames.front();
+        std::map<std::string, Channel>::iterator it = channelMap.find(channelNames.front());
+        if (it == channelMap.end())
+            it = channelMap.insert(std::make_pair(channelNames.front(), Channel(channelNames.front(), server.getLogger()))).first;
+        if (it->second.isProtected()) {
+            if (!keys.empty() && !keys.front().empty()) {
+                try { 
+                    it->second.addUser(user, keys.front());
+                    keys.erase(keys.begin());
+                } catch (std::exception& e) {
+                    server.getLogger().log(WARNING, e.what());
+                }
+            }
+            else
+                throw std::invalid_argument("Channel requires a valid password");
+        }
+        else 
+            it->second.addUser(user);
+        channelNames.erase(channelNames.begin());
+    }
 }
+
+
 
 
 bool MessageHandler::_isAuthenticated(User& user, const std::string& command, Server& server) {
@@ -112,7 +139,7 @@ bool MessageHandler::_validateUSER(const Message& message) {
 }
 
 bool MessageHandler::_validateJOIN(const Message& message) {
-    return message.getParams().size() == 1 && !message.getTrailing().empty();
+    return (message.getParams().size() == 1 || message.getParams().size() == 2) && !message.getTrailing().empty();
 }
 
 /*
@@ -120,38 +147,39 @@ Required Commands
 These commands are necessary for the core functionality specified in your subject:
 
 Authentication
-PASS <password>
 
+PASS <password>
 Used to authenticate a user with a password.
 If your server requires a password, implement this command to validate the user's connection.
-NICK <nickname>
 
+NICK <nickname>
 Sets or changes the user's nickname.
 Required to identify users uniquely in the IRC server.
-USER <username> <hostname> <servername> :<realname>
 
+USER <username> <hostname> <servername> :<realname>
 Sends user information to the server during connection.
 Fields like <hostname> and <servername> can be placeholders since you are not building a distributed IRC server.
-Channel Management
-JOIN <channel>{,<channel>} [<key>{,<key>}]
 
+Channel Management
+
+JOIN <channel>{,<channel>} [<key>{,<key>}]
 Allows users to join channels.
 Handle invite-only channels (MODE +i) and channels with keys (MODE +k).
+
 PART <channel>{,<channel>} [<message>]
-
 Allows users to leave channels.
+
 KICK <channel> <user> [<comment>]
-
 Allows a channel operator to remove a user from the channel.
+
 INVITE <nickname> <channel>
-
 Allows a channel operator to invite a user to a channel.
-TOPIC <channel> [<topic>]
 
+TOPIC <channel> [<topic>]
 Allows users to view the topic of a channel.
 Only channel operators can set the topic if the channel is in +t mode.
-MODE <channel> <modes> [<params>]
 
+MODE <channel> <modes> [<params>]
 Allows channel operators to set modes:
 +i: Invite-only mode.
 +t: Topic changes restricted to operators.
@@ -160,10 +188,10 @@ Allows channel operators to set modes:
 +l <limit>: Set maximum user limit.
 
 Messaging
+
 PRIVMSG <receiver>{,<receiver>} :<message>
-
 Sends a private message to a user or channel.
-NOTICE <receiver>{,<receiver>} :<message>
 
+NOTICE <receiver>{,<receiver>} :<message>
 Sends a notice to a user or channel (non-replyable).
 */

@@ -2,7 +2,8 @@
 
 
 //IN SERVER WE NEED TO CHECK IF THE NAME IS EMPTY AFTER THE CREATION OF THE CHANNEL BECAUSE IF YES THEN SEND MSG TO THE USER
-Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(false)
+//Maybe throw std::invalid_argument if name of the channel is wrong
+Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(false), passPotected(false)
 {
     if (name.empty() || name.length() > 200 || 
         (name[0] != '#' && name[0] != '&') ||
@@ -22,8 +23,12 @@ Channel::~Channel()
     logger.log(INFO, "Channel destroyed: " + name);
 }
 
-void Channel::addUser(User& user) 
+//Also add channel to the user container "std::vector<std::string> channels;""
+void Channel::addUser(User& user, const std::string& password = "") 
 {
+    if(passPotected && password != pass_key)
+        throw std::invalid_argument("Wrong password for channel " + name + ": " + password);
+        
     members.insert(std::make_pair(user.getSocketFd(), user));
     if (members.size() == 1) 
     {
@@ -75,4 +80,9 @@ bool Channel::is_operator(User& user)
     if (operators.find(user.getSocketFd()) != operators.end())
         return (true);
     return (false);
+}
+
+bool Channel::isProtected(void)
+{
+    return (passPotected);
 }

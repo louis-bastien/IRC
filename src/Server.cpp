@@ -211,3 +211,7 @@ const std::string& Server::getPassword(void) const {
 std::map<int, User>& Server::getUserMap(void) {
     return (_userMap);
 }
+
+std::map<std::string, Channel>& Server::getChannelMap(void) {
+    return (_channelMap);
+}
