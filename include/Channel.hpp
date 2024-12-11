@@ -16,6 +16,8 @@ class Channel
         std::string topic;
         Logger& logger;
         bool    topic_restricted;
+        bool invite_only;
+        std::string password;
 
     public:
         Channel(std::string& name, Logger& logger);
@@ -26,4 +28,8 @@ class Channel
         std::string getName() const;
         std::string getTopic() const;
         bool is_operator(User& user);
+        void kickUser(User& operator_user, User& target_user, const std::string& reason);
+        void inviteUser(User& operator_user, User& target_user);
+        void changeMode(User& operator_user, char mode, bool enable, const std::string& mode_param = "");
+
 };
