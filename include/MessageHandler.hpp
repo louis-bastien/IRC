@@ -23,11 +23,12 @@ class MessageHandler {
         static void _handleUSER(User& user, const Message& message, Server& server);
         static void _handlePING(User& user, const Message& message, Server& server);
         static void _handleJOIN(User& user, const Message& message, Server& server);
+        static void _handlePART(User& user, const Message& message, Server& server);
 
         static bool _validateCAP(const Message& message);
         static bool _validatePASS(const Message& message);
         static bool _validateNICK(const Message& message);
         static bool _validateUSER(const Message& message);
         static bool _validateJOIN(const Message& message);
-        static bool _validateUSER(const Message& message);
+        static bool _validatePART(const Message& message);
 };

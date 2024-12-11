@@ -80,9 +80,11 @@ void MessageHandler::_handleJOIN(User& user, const Message& message, Server& ser
 
     while(!channelNames.empty()) {
         std::string currentChannel = channelNames.front();
-        std::map<std::string, Channel>::iterator it = channelMap.find(channelNames.front());
-        if (it == channelMap.end())
-            it = channelMap.insert(std::make_pair(channelNames.front(), Channel(channelNames.front(), server.getLogger()))).first;
+        std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
+        if (it == channelMap.end()) {
+            it = channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger()))).first;
+            server.getLogger().log(INFO, "Channel created: " + currentChannel);
+        }
         if (it->second.isProtected()) {
             if (!keys.empty() && !keys.front().empty()) {
                 try { 
@@ -101,8 +103,30 @@ void MessageHandler::_handleJOIN(User& user, const Message& message, Server& ser
     }
 }
 
+void MessageHandler::_handlePART(User& user, const Message& message, Server& server) {
+    if (!_validatePART(message))
+        throw std::invalid_argument("Wrong command format for JOIN");  
+    if (!_isRegistered(user, message.getCommand(), server)) return;
 
+    std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
+    std::map<std::string, Channel>& channelMap = server.getChannelMap();
 
+    while(!channelNames.empty()) {
+        std::string currentChannel = channelNames.front();
+        std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
+        if (it == channelMap.end())
+            server.getLogger().log(WARNING, " Channel does not exist: " + currentChannel);
+        else {
+            std::string reason = message.getParams().size() > 1 ? message.getParams()[1] : "Leaving";
+            it->second.removeUser(user, reason);
+            if (it->second.getMembers().empty()) {
+                channelMap.erase(it);
+                server.getLogger().log(INFO, "Channel removed: " + currentChannel);
+            }
+        }
+        channelNames.erase(channelNames.begin());
+    }
+}
 
 bool MessageHandler::_isAuthenticated(User& user, const std::string& command, Server& server) {
     if (!user.isAuthenticated()) {
@@ -140,6 +164,10 @@ bool MessageHandler::_validateUSER(const Message& message) {
 
 bool MessageHandler::_validateJOIN(const Message& message) {
     return (message.getParams().size() == 1 || message.getParams().size() == 2) && !message.getTrailing().empty();
+}
+
+bool MessageHandler::_validatePART(const Message& message) {
+    return (message.getParams().size() == 1);
 }
 
 /*
