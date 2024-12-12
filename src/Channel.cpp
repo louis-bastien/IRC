@@ -25,9 +25,8 @@ Channel::~Channel()
 //Also add channel to the user container "std::vector<std::string> channels;""
 void Channel::addUser(User& user, const std::string& password = "") 
 {
-    if(passPotected && password != pass_key)
-        throw std::invalid_argument("Wrong password for channel " + name + ": " + password);
-        
+    if(isProtected() && password != this->password)
+        throw std::invalid_argument("Wrong password for channel " + name + ": " + password); 
     members.insert(std::make_pair(user.getSocketFd(), user));
     if (members.size() == 1) 
     {

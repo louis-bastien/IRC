@@ -39,6 +39,5 @@ class Channel
         void kickUser(User& operator_user, User& target_user, const std::string& reason);
         void inviteUser(User& operator_user, User& target_user);
         void changeMode(User& operator_user, std::vector<std::string>);
-        bool isProtected(void)
-
+        bool isProtected(void);
 };
