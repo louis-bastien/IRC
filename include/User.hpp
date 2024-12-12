@@ -20,7 +20,8 @@ class User
         std::string username;
         std::string nickname;
         int socket_fd;
-        bool is_authenticated; //if nick and user commands are verified
+        bool is_authenticated; //if pass command is received are verified
+        bool is_registered; //if nick user and pass commands are verified
         std::vector<std::string> channels;
         Logger& logger;
     
@@ -33,10 +34,13 @@ class User
         std::string getUsername() const;
         void setUsername(const std::string& username);
         bool isAuthenticated() const;
+        bool isRegistered() const;
         void sendMessage(const std::string& message);
         void joinChannel(Channel& channel);
         void leaveChannel(Channel& channel);
+        bool canRegister() const;
         void authenticate();
+        void doRegister();
         int getSocketFd();
         void leaveAllChannels(std::map<std::string, Channel>& allChannels);
 };

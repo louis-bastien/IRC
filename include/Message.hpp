@@ -10,8 +10,8 @@ class Message {
     private:
         std::string _prefix;
         std::string _command;
-        std::string _trailing;
         std::vector<std::string> _params;
+        std::string _trailing;
         
         void parse(const std::string& rawMessage);
         void extractPrefix(std::istringstream& ss);

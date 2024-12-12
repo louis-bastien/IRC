@@ -1,7 +1,8 @@
 #include "Channel.hpp"
 
 //IN SERVER WE NEED TO CHECK IF THE NAME IS EMPTY AFTER THE CREATION OF THE CHANNEL BECAUSE IF YES THEN SEND MSG TO THE USER
-Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(false)
+//Maybe throw std::invalid_argument if name of the channel is wrong
+Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(false), passPotected(false)
 {
     if (name.empty() || name.length() > 200 || 
         (name[0] != '#' && name[0] != '&') ||
@@ -21,8 +22,12 @@ Channel::~Channel()
     logger.log(INFO, "Channel destroyed: " + name);
 }
 
-void Channel::addUser(User& user) 
+//Also add channel to the user container "std::vector<std::string> channels;""
+void Channel::addUser(User& user, const std::string& password = "") 
 {
+    if(passPotected && password != pass_key)
+        throw std::invalid_argument("Wrong password for channel " + name + ": " + password);
+        
     members.insert(std::make_pair(user.getSocketFd(), user));
     if (members.size() == 1) 
     {
@@ -67,6 +72,11 @@ std::string Channel::getName() const
 std::string Channel::getTopic() const
 {
     return (this->topic);
+}
+
+std::map<int, User> Channel::getMembers() const
+{
+    return (members);
 }
 
 bool Channel::is_operator(User& user)
@@ -165,3 +175,94 @@ void Channel::changeMode(User& operator_user, char mode, bool enable, const std:
         it->second.sendMessage(":" + operator_user.getNickname() + " MODE " + name + " " + mode_change.str() + " " + mode_param);
     logger.log(INFO, operator_user.getNickname() + " changed channel mode: " + mode_change.str() + " " + mode_param);
 }
+
+void Channel::kickUser(User& operator_user, User& target_user, const std::string& reason) 
+{
+    if (!is_operator(operator_user)) {
+        logger.log(WARNING, operator_user.getNickname() + " tried to kick " + target_user.getNickname() + " without operator privileges.");
+        operator_user.sendMessage("482 " + operator_user.getNickname() + " :You're not a channel operator");
+        return;
+    }
+    if (members.find(target_user.getSocketFd()) == members.end()) {
+        logger.log(WARNING, operator_user.getNickname() + " tried to kick a user who is not in the channel.");
+        operator_user.sendMessage("441 " + target_user.getNickname() + " " + name + " :They aren't on that channel");
+        return;
+    }
+    removeUser(target_user);
+    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
+        it->second.sendMessage(":" + operator_user.getNickname() + " KICK " + name + " " + target_user.getNickname() + " :" + reason);
+    logger.log(INFO, operator_user.getNickname() + " kicked " + target_user.getNickname() + " from channel " + name + " with reason: " + reason);
+    target_user.sendMessage(":" + operator_user.getNickname() + " KICK " + name + " :" + reason);
+}
+
+void Channel::inviteUser(User& operator_user, User& target_user) 
+{
+    if (!is_operator(operator_user)) 
+    {
+        logger.log(WARNING, operator_user.getNickname() + " tried to invite " + target_user.getNickname() + " without operator privileges.");
+        operator_user.sendMessage("482 " + operator_user.getNickname() + " :You're not a channel operator");
+        return;
+    }
+    if (members.find(target_user.getSocketFd()) != members.end()) {
+        logger.log(WARNING, operator_user.getNickname() + " tried to invite " + target_user.getNickname() + " who is already in the channel.");
+        operator_user.sendMessage("443 " + target_user.getNickname() + " " + name + " :is already on channel");
+        return;
+    }
+    target_user.sendMessage(":" + operator_user.getNickname() + " INVITE " + target_user.getNickname() + " :" + name);
+    logger.log(INFO, operator_user.getNickname() + " invited " + target_user.getNickname() + " to channel " + name);
+}
+
+void Channel::changeMode(User& operator_user, char mode, bool enable, const std::string& mode_param) 
+{
+    if (!is_operator(operator_user)) {
+        logger.log(WARNING, operator_user.getNickname() + " tried to change channel mode without operator privileges.");
+        operator_user.sendMessage("482 " + operator_user.getNickname() + " :You're not a channel operator");
+        return;
+    }
+    std::ostringstream mode_change; 
+    mode_change << (enable ? "+" : "-") << mode; // here we create a ostringstream var that will hols the mode and whether its enabled or not (e.g. +i for invite only);
+    switch (mode) 
+    {
+        case 'i':
+            invite_only = enable;
+            break;
+        case 't':
+            topic_restricted = enable;
+            break;
+        case 'k':
+            if (enable) 
+            {
+                if (mode_param.empty()) 
+                {
+                    operator_user.sendMessage("461 " + operator_user.getNickname() + " MODE :Not enough parameters");
+                    return;
+                }
+                password = mode_param;
+            } 
+            else
+                password.clear();
+            break;
+        case 'o':
+            if (enable)
+            {
+                if (mode_param.empty()) 
+                {
+                    operator_user.sendMessage("461 " + operator_user.getNickname() + " MODE :Not enough parameters");
+                    return;
+                }
+                int target_fd = atoi(mode_param.c_str());
+                if (members.find(target_fd) != members.end())
+                    operators.insert(std::make_pair(target_fd, members[target_fd]));
+                else
+                    operator_user.sendMessage("441 " + mode_param + " " + name + " :They aren't on that channel");
+            }
+            break;
+        default:
+            operator_user.sendMessage("472 " + operator_user.getNickname() + " " + mode + " :is unknown mode char");
+            return;
+    }
+    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
+        it->second.sendMessage(":" + operator_user.getNickname() + " MODE " + name + " " + mode_change.str() + " " + mode_param);
+    logger.log(INFO, operator_user.getNickname() + " changed channel mode: " + mode_change.str() + " " + mode_param);
+}
+

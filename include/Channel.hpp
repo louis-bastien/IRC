@@ -28,14 +28,17 @@ class Channel
     public:
         Channel(std::string& name, Logger& logger);
         ~Channel();
-        void addUser(User& user);
-        void removeUser(User&user);
+        void addUser(User& user, const std::string& password = "");
+        void removeUser(User&user); //add the reason as a second argument to broadcast to channel
         void setTopic(const std::string& topic, User& user);
         std::string getName() const;
         std::string getTopic() const;
+        std::map<int, User> getMembers() const;
         bool is_operator(User& user);
         void kickUser(User& operator_user, User& target_user, const std::string& reason);
         void inviteUser(User& operator_user, User& target_user);
         void changeMode(User& operator_user, char mode, bool enable, const std::string& mode_param = "");
         
+        bool isProtected(void)
+
 };

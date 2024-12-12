@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Message.hpp"
+#include "MessageHandler.hpp"
 
 //Satic pipe fds used for signal handling with Epoll. 
 int Server::_pipeFd[2] = {-1, -1};
@@ -42,6 +43,12 @@ void Server::init() {
         throw std::runtime_error("Failed to create server socket");
     }
     _logger.log(INFO, "Server socket successfully created");
+
+    int opt = 1;
+    if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        _logger.log(ERROR, "Failed to set SO_REUSEADDR on server socket");
+        throw std::runtime_error("Failed to set SO_REUSEADDR on server socket");
+    }
 
     if (bind(_serverFd, (const sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         _logger.log(ERROR, "Failed to bind server socket");
@@ -162,8 +169,18 @@ void Server::handleReadEvent(int eventFd) {
                 break;
         }
     }
-    Message msg(rawMessage);
-    msg.logMsg(_logger);
+    handleMessage(eventFd, rawMessage);
+}
+
+void Server::handleMessage(int clientFd, std::string& rawMessage) {
+    try {
+        Message msg(rawMessage);
+        msg.logMsg(_logger);
+        MessageHandler::validateAndDispatch(clientFd, msg, *this);
+    }
+    catch (std::exception &e) { 
+        _logger.log(WARNING, "Error processing message: " + Utils::toString(e.what()) + ". Skipping...");
+    }
 }
 
 void Server::closeClient(int clientFd) {
@@ -183,6 +200,18 @@ void Server::epollAddFd(int newFd) {
     _logger.log(DEBUG, "Read event (fd=" + Utils::toString(newFd) + ") added to epoll instance");
 }
 
+Logger& Server::getLogger(void) const {
+    return (_logger);
+}
+
 const std::string& Server::getPassword(void) const {
     return (_password);
+}
+
+std::map<int, User>& Server::getUserMap(void) {
+    return (_userMap);
+}
+
+std::map<std::string, Channel>& Server::getChannelMap(void) {
+    return (_channelMap);
 }
