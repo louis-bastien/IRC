@@ -1,7 +1,7 @@
 #include "User.hpp"
 
 User::User(int socket_fd, Logger& logger) : username(""), nickname("*"), socket_fd(socket_fd),
-            is_authenticated(false),is_registered(false), logger(logger) {}
+            is_authenticated(false), is_registered(false), logger(logger) {}
 
 std::string User::getNickname() const
 {
@@ -24,32 +24,24 @@ User& User::operator=(const User& other)
     return (*this);
 }
 
-// here i only check certain parameters, but i DONT check if the nickname already exists, 
-//it should be done in server or a channel
-// i think i need to prompt messages here like "... set their name as ..." , but not sure if to do it here
-
 void User::setNickname(const std::string& nickname)
 {
     if (this->is_registered) {
         sendMessage("462 ERR_ALREADYREGISTRED: User already registered.");
-        logger.log(WARNING, "User is already registered can't change nickname.");
-        return;
+        throw std::invalid_argument("User is already registered can't change nickname.");
     }
     if (nickname.empty()) {
         sendMessage("431 ERR_NONICKNAMEGIVEN: No nickname provided.");
-        logger.log(WARNING, "Attempted to set an empty nickname.");
-        return;
+        throw std::invalid_argument("Attempted to set an empty nickname.");
     }
     if (nickname.length() > 9) {
         sendMessage("432 ERR_ERRONEUSNICKNAME: Nickname is too long.");
-        logger.log(WARNING, "Nickname too long: " + nickname);
-        return;
+        throw std::invalid_argument("Nickname too long: " + nickname);
     }
     if (!(isalpha(nickname[0]) || nickname[0] == '-' || nickname[0] == '[' || nickname[0] == ']' ||
         nickname[0] == '\\' || nickname[0] == '^' || nickname[0] == '_')) {
         sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid first character in nickname.");
-        logger.log(WARNING, "Invalid nickname first character: " + nickname);
-        return;
+        throw std::invalid_argument("Invalid nickname first character: " + nickname);
     }
     for (std::string::size_type i = 0; i < nickname.length(); ++i) 
     {
@@ -57,8 +49,7 @@ void User::setNickname(const std::string& nickname)
         if (!(isalnum(c) || c == '-' || c == '[' || c == ']' ||
         c == '\\' || c == '^' || c == '_')) {
             sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid character in nickname.");
-            logger.log(WARNING, "Invalid character in nickname: " + nickname);
-            return;
+            throw std::invalid_argument("Invalid character in nickname: " + nickname);
         }
     }
     this->nickname = nickname;
@@ -70,32 +61,26 @@ std::string User::getUsername() const
     return (this->username);
 }
 
-
-//same as in nickname, not all params are checked and need to promt msgs either here or somewhere
 void User::setUsername(const std::string& username)
 {
     if (this->is_registered) {
         sendMessage("462 ERR_ALREADYREGISTRED: User already registered.");
-        logger.log(WARNING, "User is already registered can't change username.");
-        return;
+        throw std::invalid_argument("User is already registered can't change username.");
     }
     if (username.empty()) {
         sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
-        logger.log(WARNING, "Attempted to set an empty username.");
-        return;
+        throw std::invalid_argument("Attempted to set an empty username.");
     }
     if (!isalpha(username[0]) && username[0] != '-'){
         sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
-        logger.log(WARNING, "Attempted to set invalid username.");
-        return;
+        throw std::invalid_argument("Attempted to set invalid username.");
     }
     for (std::string::size_type i = 0; i < username.length(); ++i)
     {
         char c = username[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
             sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
-            logger.log(WARNING, "Attempted to set an empty username.");
-            return;
+            throw std::invalid_argument("Attempted to set an empty username.");
         }
     }
     this->username = username;
@@ -118,8 +103,6 @@ bool User::canRegister() const
 {
     return is_authenticated && !nickname.empty() && !username.empty();
 }
-
-// i think this has to also be done outside user to verify the password, or here with 2 params, expected pass and given by the user pass where we compare them
 
 void User::authenticate()
 {
@@ -144,8 +127,6 @@ void User::doRegister()
     sendMessage("004 " + nickname + " Not many functions available yet");
 }
 
-
-//also i am not sure about sending private messages, i also think it shoulb be done outside the usres class to access the target
 void User::sendMessage(const std::string& message)
 {
     std::string formattedMessage = ":ircserv " + message + "\r\n";

@@ -5,8 +5,8 @@
 #include "Logger.hpp"
 #include <algorithm> 
 
-
-// check if is registered before setting user/nick: broadcast fucn; implement throw; parse mode fucntions; 
+// invite create a list and check in adduser
+// broadcast fucn; implement throw; parse mode fucntions; 
 //mode(user& user, std::vector<std::string> params) 
 //kick (user_op, std::string(user_trget), std::string (reason = "Goodbye"))
 //(part) leave channel ->reason (remove user)
@@ -22,7 +22,8 @@ class Channel
         std::string topic;
         Logger& logger;
         bool    topic_restricted;
-        bool invite_only;
+        bool    invite_only;
+        bool    is_protected;
         std::string password;
 
     public:
@@ -37,8 +38,7 @@ class Channel
         bool is_operator(User& user);
         void kickUser(User& operator_user, User& target_user, const std::string& reason);
         void inviteUser(User& operator_user, User& target_user);
-        void changeMode(User& operator_user, char mode, bool enable, const std::string& mode_param = "");
-        
+        void changeMode(User& operator_user, std::vector<std::string>);
         bool isProtected(void)
 
 };
