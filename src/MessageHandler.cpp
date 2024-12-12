@@ -50,15 +50,23 @@ void MessageHandler::_handlePASS(User& user, const Message& message, Server& ser
 }
 
 void MessageHandler::_handleNICK(User& user, const Message& message, Server& server) {
-    //Check if already exists within userMAP
-    // go to user if (!_isAuthenticated(user, message.getCommand(), server)) return;
+    std::string nickname = message.getParams()[0];
+    std::map<int, User>::iterator it = server.getUserMap().begin();
+    while (it != server.getUserMap().end()) {
+        if (it->second.getNickname() == nickname)
+            throw std::invalid_argument("Nickname already exists: " + nickname);
+    }
     user.setNickname(message.getParams()[0]);
     server.getLogger().log(DEBUG, "NICK command handled");
 }
 
 void MessageHandler::_handleUSER(User& user, const Message& message, Server& server) {
-    //Check if already exists within userMAP
-    // go t user if (!_isAuthenticated(user, message.getCommand(), server)) return;
+    std::string username = message.getParams()[0];
+    std::map<int, User>::iterator it = server.getUserMap().begin();
+    while (it != server.getUserMap().end()) {
+        if (it->second.getUsername() == username)
+            throw std::invalid_argument("Nickname already exists: " + username);
+    }
     user.setUsername(message.getParams()[0]);
     server.getLogger().log(DEBUG, "USER command handled");
 }
