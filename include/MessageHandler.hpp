@@ -24,6 +24,7 @@ class MessageHandler {
         static void _handlePING(User& user, const Message& message, Server& server);
         static void _handleJOIN(User& user, const Message& message, Server& server);
         static void _handlePART(User& user, const Message& message, Server& server);
+        static void _handleKICK(User& user, const Message& message, Server& server);
 
         static bool _validateCAP(const Message& message);
         static bool _validatePASS(const Message& message);
@@ -31,4 +32,5 @@ class MessageHandler {
         static bool _validateUSER(const Message& message);
         static bool _validateJOIN(const Message& message);
         static bool _validatePART(const Message& message);
+        static bool _validateKICK(const Message& message);
 };
