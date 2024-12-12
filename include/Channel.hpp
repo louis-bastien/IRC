@@ -5,6 +5,12 @@
 #include "Logger.hpp"
 #include <algorithm> 
 
+
+// check if is registered before setting user/nick: broadcast fucn; implement throw; parse mode fucntions; 
+//mode(user& user, std::vector<std::string> params) 
+//kick (user_op, std::string(user_trget), std::string (reason = "Goodbye"))
+//(part) leave channel ->reason (remove user)
+// broadcast everything(change the mode etc)
 class User;
 
 class Channel
