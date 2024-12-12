@@ -9,7 +9,8 @@ void MessageHandler::_initCmdHandlers() {
         MessageHandler::_cmdHandlers.insert(std::make_pair("NICK", &MessageHandler::_handleNICK));
         MessageHandler::_cmdHandlers.insert(std::make_pair("USER", &MessageHandler::_handleUSER));
         MessageHandler::_cmdHandlers.insert(std::make_pair("PING", &MessageHandler::_handlePING));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("PING", &MessageHandler::_handleJOIN));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("JOIN", &MessageHandler::_handleJOIN));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("PART", &MessageHandler::_handleJOIN));
     }
 }
 
@@ -49,13 +50,15 @@ void MessageHandler::_handlePASS(User& user, const Message& message, Server& ser
 }
 
 void MessageHandler::_handleNICK(User& user, const Message& message, Server& server) {
-    if (!_isAuthenticated(user, message.getCommand(), server)) return;
+    //Check if already exists within userMAP
+    // go to user if (!_isAuthenticated(user, message.getCommand(), server)) return;
     user.setNickname(message.getParams()[0]);
     server.getLogger().log(DEBUG, "NICK command handled");
 }
 
 void MessageHandler::_handleUSER(User& user, const Message& message, Server& server) {
-    if (!_isAuthenticated(user, message.getCommand(), server)) return;
+    //Check if already exists within userMAP
+    // go t user if (!_isAuthenticated(user, message.getCommand(), server)) return;
     user.setUsername(message.getParams()[0]);
     server.getLogger().log(DEBUG, "USER command handled");
 }
