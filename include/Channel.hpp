@@ -31,5 +31,5 @@ class Channel
         void kickUser(User& operator_user, User& target_user, const std::string& reason);
         void inviteUser(User& operator_user, User& target_user);
         void changeMode(User& operator_user, char mode, bool enable, const std::string& mode_param = "");
-
+        
 };
