@@ -126,7 +126,7 @@ void Channel::kickUser(User& operator_user, std::string& tar_user, std::string& 
         return;
     }
     if (is_operator(target_user))
-        throw(std::invalid_argument("Operator " + operator_user.getNickname() + " tried to kick another operator " + target_user.getNickname()))
+        throw(std::invalid_argument("Operator " + operator_user.getNickname() + " tried to kick another operator " + target_user.getNickname()));
     removeUser(target_user, reason);
     broadcast(":" + operator_user.getNickname() + " KICK " + name + " " + target_user.getNickname() + " :" + reason);
     target_user.sendMessage(":" + operator_user.getNickname() + " KICK " + name + " :" + reason);
