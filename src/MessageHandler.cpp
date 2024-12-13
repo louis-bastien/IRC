@@ -156,19 +156,13 @@ void MessageHandler::_handleKICK(User& user, const Message& message, Server& ser
 
         std::string channelName = message.getParams()[0];
         std::string targetName = message.getParams()[1];
-        std::string reason = message.getTrailing();
+        std::string reason = message.getTrailing().empty() ? "" : message.getTrailing();
 
         std::map<std::string, Channel>::iterator itChannel = server.getChannelMap().find(channelName);
         if (itChannel == server.getChannelMap().end())
             server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
-        
-        std::map<int, User>::iterator itUser = server.getUserMap().begin();
-        while (itUser->second.getUsername() != targetName) {
-            if (itUser == server.getUserMap().end())
-                throw std::invalid_argument("User does not exist: " + targetName);
-        }
-        std::string reason = reason.empty() ? "Goodbye" : reason;
-        itChannel->second.kickUser(user, itUser->second, reason);
+
+        itChannel->second.kickUser(user, targetName, reason);
 }
 
 void MessageHandler::_handleINVITE(User& user, const Message& message, Server& server) {
@@ -205,13 +199,17 @@ void MessageHandler::_handleMODE(User& user, const Message& message, Server& ser
     if (!_isRegistered(user, message.getCommand(), server)) return;
 
         std::vector<std::string> paramsVec = message.getParams();
+        if (paramsVec[1] == "+i") {
+            user.sendMessage("MODE " + paramsVec[0] + " +i");
+            return;
+        }
         std::string channelName = paramsVec[0];
 
         std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
         if (it == server.getChannelMap().end())
             server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
         paramsVec.erase(paramsVec.begin());        
-        it->second.setTopic(user, paramsVec);
+        it->second.changeMode(user, paramsVec);
 }
 
 

@@ -185,6 +185,7 @@ void Server::handleMessage(int clientFd, std::string& rawMessage) {
 
 void Server::closeClient(int clientFd) {
     epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+    _userMap.find(clientFd)->second.leaveAllChannels(getChannelMap());
     _userMap.erase(clientFd);
     _logger.log(INFO, "Closed client (fd=" + Utils::toString(clientFd) + ") successfully");
 }

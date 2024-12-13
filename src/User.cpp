@@ -135,14 +135,6 @@ void User::sendMessage(const std::string& message)
     logger.log(DEBUG, "Sent message '" + message + "' to client fd=" + Utils::toString(socket_fd));    
 }
 
-
-void User::joinChannel(Channel& channel) 
-{
-    channel.addUser(*this);
-    channels.push_back(channel.getName());
-    logger.log(INFO, nickname + " joined channel " + channel.getName());
-}
-
 void User::leaveChannel(Channel& channel, std::string& reason) 
 {
     channel.removeUser(*this, reason);
@@ -152,11 +144,12 @@ void User::leaveChannel(Channel& channel, std::string& reason)
 
 void User::leaveAllChannels(std::map<std::string, Channel>& allChannels) 
 {
-    for (std::vector<std::string>::iterator it = channels.begin(); it != channels.end(); ++it) 
+    for (std::vector<std::string>::iterator it = channels.begin(); it != channels.end(); ++it)
     {
-        std::map<std::string, Channel>::iterator channelIt = allChannels.find(*it);
+        std::string channelName = *it;
+        std::map<std::string, Channel>::iterator channelIt = allChannels.find(channelName);
         if (channelIt != allChannels.end()) 
-            channelIt->second.removeUser(*this);
+            channelIt->second.removeUser(*this, "Goodbye");
     }
     channels.clear();
     logger.log(INFO, nickname + " left all channels.");

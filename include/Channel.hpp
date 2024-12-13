@@ -27,9 +27,9 @@ class Channel
     public:
         Channel(std::string& name, Logger& logger);
         ~Channel();
-        void addUser(User& user, const std::string& password = "");
-        void removeUser(User& user, std::string& reason);
-        void setTopic(const std::string& topic, User& user);
+        void addUser(User& user, std::string password="");
+        void removeUser(User& user, std::string reason);
+        void setTopic(User& user, const std::string& topic);
         std::string getName() const;
         std::string getTopic() const;
         std::map<int, User> getMembers() const;

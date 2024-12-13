@@ -23,9 +23,9 @@ Channel::~Channel()
 }
 
 //Also add channel to the user container "std::vector<std::string> channels;""
-void Channel::addUser(User& user, const std::string& password = "") 
+void Channel::addUser(User& user, std::string password) 
 {
-    if (isProtected() && password != this->password)
+    if (isProtected() && !password.empty() && password != this->password)
         throw (std::invalid_argument("Wrong password for channel " + name + ": " + password)); 
     if (!invite_only)
     {
@@ -53,14 +53,14 @@ void Channel::addUser(User& user, const std::string& password = "")
     }
 }
 
-void Channel::removeUser(User& user, std::string& reason) 
+void Channel::removeUser(User& user, std::string reason = "") 
 {
     members.erase(user.getSocketFd());
     operators.erase(user.getSocketFd());
-    logger.log(INFO, user.getNickname() + " left channel " + name);
+    logger.log(INFO, user.getNickname() + " left channel " + name + ". Reason: " + reason);
 }
 
-void Channel::setTopic(const std::string& topic, User& user) 
+void Channel::setTopic(User& user, const std::string& topic) 
 {
     if (topic_restricted && !is_operator(user))
     {
@@ -92,6 +92,11 @@ std::map<int, User> Channel::getMembers() const
 {
     return (members);
 }
+
+bool Channel::isProtected(void) {
+    return(is_protected);
+}
+
 
 bool Channel::is_operator(User& user)
 {
@@ -190,6 +195,7 @@ void Channel::changeMode(User& operator_user, std::vector<std::string> params)
         mode_param = params[1];
         else
         mode_param = "";
+    std::map<int, User>::iterator target_it = members.end();
     switch (mode) 
     {
         case 'i':
@@ -217,7 +223,6 @@ void Channel::changeMode(User& operator_user, std::vector<std::string> params)
                 operator_user.sendMessage("461 " + operator_user.getNickname() + " MODE :Not enough parameters");
                 return;
             }
-            std::map<int, User>::iterator target_it = members.end();
             for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
             {
                 if (mode_param == it->second.getNickname()){
@@ -240,6 +245,8 @@ void Channel::changeMode(User& operator_user, std::vector<std::string> params)
     }
     broadcast(":" + operator_user.getNickname() + " MODE " + name + " " + (enable ? "+" : "-") + std::string(1, mode) + " " + mode_param);
 }
+
+
 
 void Channel::broadcast(std::string msg)
 {
