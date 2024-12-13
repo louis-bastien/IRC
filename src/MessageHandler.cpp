@@ -10,7 +10,11 @@ void MessageHandler::_initCmdHandlers() {
         MessageHandler::_cmdHandlers.insert(std::make_pair("USER", &MessageHandler::_handleUSER));
         MessageHandler::_cmdHandlers.insert(std::make_pair("PING", &MessageHandler::_handlePING));
         MessageHandler::_cmdHandlers.insert(std::make_pair("JOIN", &MessageHandler::_handleJOIN));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("PART", &MessageHandler::_handleJOIN));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("PART", &MessageHandler::_handlePART));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("KICK", &MessageHandler::_handleKICK));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("INVITE", &MessageHandler::_handleINVITE));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("TOPIC", &MessageHandler::_handleTOPIC));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("MODE", &MessageHandler::_handleMODE));
     }
 }
 
@@ -50,22 +54,28 @@ void MessageHandler::_handlePASS(User& user, const Message& message, Server& ser
 }
 
 void MessageHandler::_handleNICK(User& user, const Message& message, Server& server) {
+    if (!_validateNICK(message))
+        throw std::invalid_argument("Wrong command format for CAP");
     std::string nickname = message.getParams()[0];
     std::map<int, User>::iterator it = server.getUserMap().begin();
     while (it != server.getUserMap().end()) {
         if (it->second.getNickname() == nickname)
             throw std::invalid_argument("Nickname already exists: " + nickname);
+        it++;
     }
     user.setNickname(message.getParams()[0]);
     server.getLogger().log(DEBUG, "NICK command handled");
 }
 
 void MessageHandler::_handleUSER(User& user, const Message& message, Server& server) {
+    if (!_validateUSER(message))
+        throw std::invalid_argument("Wrong command format for CAP");
     std::string username = message.getParams()[0];
     std::map<int, User>::iterator it = server.getUserMap().begin();
     while (it != server.getUserMap().end()) {
         if (it->second.getUsername() == username)
             throw std::invalid_argument("Nickname already exists: " + username);
+        it++;
     }
     user.setUsername(message.getParams()[0]);
     server.getLogger().log(DEBUG, "USER command handled");
@@ -116,7 +126,7 @@ void MessageHandler::_handleJOIN(User& user, const Message& message, Server& ser
 
 void MessageHandler::_handlePART(User& user, const Message& message, Server& server) {
     if (!_validatePART(message))
-        throw std::invalid_argument("Wrong command format for JOIN");  
+        throw std::invalid_argument("Wrong command format for PART");  
     if (!_isRegistered(user, message.getCommand(), server)) return;
 
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
@@ -128,7 +138,7 @@ void MessageHandler::_handlePART(User& user, const Message& message, Server& ser
         if (it == channelMap.end())
             server.getLogger().log(WARNING, " Channel does not exist: " + currentChannel);
         else {
-            std::string reason = message.getParams().size() > 1 ? message.getParams()[1] : "Leaving";
+            std::string reason = message.getTrailing().empty() ? "Leaving" : message.getParams()[1];
             it->second.removeUser(user, reason);
             if (it->second.getMembers().empty()) {
                 channelMap.erase(it);
@@ -138,6 +148,73 @@ void MessageHandler::_handlePART(User& user, const Message& message, Server& ser
         channelNames.erase(channelNames.begin());
     }
 }
+
+void MessageHandler::_handleKICK(User& user, const Message& message, Server& server) {
+    if (!_validateKICK(message)) 
+        throw std::invalid_argument("Wrong command format for KICK");
+    if (!_isRegistered(user, message.getCommand(), server)) return;
+
+        std::string channelName = message.getParams()[0];
+        std::string targetName = message.getParams()[1];
+        std::string reason = message.getTrailing();
+
+        std::map<std::string, Channel>::iterator itChannel = server.getChannelMap().find(channelName);
+        if (itChannel == server.getChannelMap().end())
+            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
+        
+        std::map<int, User>::iterator itUser = server.getUserMap().begin();
+        while (itUser->second.getUsername() != targetName) {
+            if (itUser == server.getUserMap().end())
+                throw std::invalid_argument("User does not exist: " + targetName);
+        }
+        std::string reason = reason.empty() ? "Goodbye" : reason;
+        itChannel->second.kickUser(user, itUser->second, reason);
+}
+
+void MessageHandler::_handleINVITE(User& user, const Message& message, Server& server) {
+    if (!_validateINVITE(message)) 
+        throw std::invalid_argument("Wrong command format for INVITE");
+    if (!_isRegistered(user, message.getCommand(), server)) return;
+
+        std::string nickName = message.getParams()[0];
+        std::string channelName = message.getParams()[1];
+
+        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+        if (it == server.getChannelMap().end())
+            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
+        it->second.inviteUser(user, nickName);
+}
+
+void MessageHandler::_handleTOPIC(User& user, const Message& message, Server& server) {
+    if (!_validateTOPIC(message)) 
+        throw std::invalid_argument("Wrong command format for TOPIC");
+    if (!_isRegistered(user, message.getCommand(), server)) return;
+
+        std::string channelName = message.getParams()[0];
+        std::string topicName = message.getParams().size() == 2 ? message.getParams()[1] : "";
+
+        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+        if (it == server.getChannelMap().end())
+            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
+        it->second.setTopic(user, topicName);
+}
+
+void MessageHandler::_handleMODE(User& user, const Message& message, Server& server) {
+    if (!_validateMODE(message)) 
+        throw std::invalid_argument("Wrong command format for MODE");
+    if (!_isRegistered(user, message.getCommand(), server)) return;
+
+        std::vector<std::string> paramsVec = message.getParams();
+        std::string channelName = paramsVec[0];
+
+        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+        if (it == server.getChannelMap().end())
+            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
+        paramsVec.erase(paramsVec.begin());        
+        it->second.setTopic(user, paramsVec);
+}
+
+
 
 bool MessageHandler::_isAuthenticated(User& user, const std::string& command, Server& server) {
     if (!user.isAuthenticated()) {
@@ -179,6 +256,22 @@ bool MessageHandler::_validateJOIN(const Message& message) {
 
 bool MessageHandler::_validatePART(const Message& message) {
     return (message.getParams().size() == 1);
+}
+
+bool MessageHandler::_validateKICK(const Message& message) {
+    return (message.getParams().size() == 2);
+}
+
+bool MessageHandler::_validateINVITE(const Message& message) {
+    return (message.getParams().size() == 2 && message.getTrailing().empty());
+}
+
+bool MessageHandler::_validateTOPIC(const Message& message) {
+    return (message.getParams().size() == 1 && message.getParams().size() == 2 && message.getTrailing().empty());
+}
+
+bool MessageHandler::_validateMODE(const Message& message) {
+    return (message.getParams().size() == 2 && message.getTrailing().empty());
 }
 
 /*
