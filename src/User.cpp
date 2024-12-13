@@ -143,9 +143,9 @@ void User::joinChannel(Channel& channel)
     logger.log(INFO, nickname + " joined channel " + channel.getName());
 }
 
-void User::leaveChannel(Channel& channel) 
+void User::leaveChannel(Channel& channel, std::string& reason) 
 {
-    channel.removeUser(*this);
+    channel.removeUser(*this, reason);
     channels.erase(std::remove(channels.begin(), channels.end(), channel.getName()), channels.end());
     logger.log(INFO, nickname + " left channel " + channel.getName());
 }

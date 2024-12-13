@@ -37,7 +37,7 @@ class User
         bool isRegistered() const;
         void sendMessage(const std::string& message);
         void joinChannel(Channel& channel);
-        void leaveChannel(Channel& channel);
+        void leaveChannel(Channel& channel, std::string& reason);
         bool canRegister() const;
         void authenticate();
         void doRegister();
