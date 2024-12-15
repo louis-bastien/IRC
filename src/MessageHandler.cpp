@@ -93,8 +93,8 @@ void MessageHandler::_handlePING(User& user, const Message& message, Server& ser
 void MessageHandler::_handleJOIN(User& user, const Message& message, Server& server) {
     if (!_validateJOIN(message))
         throw std::invalid_argument("Wrong command format for JOIN");  
-    if (!_isRegistered(user, message.getCommand(), server)) return;
-
+    if (!_isRegistered(user, message.getCommand(), server)) 
+        return;
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
     std::vector<std::string> keys = Utils::split(message.getParams()[1], ',');
     std::map<std::string, Channel>& channelMap = server.getChannelMap();
@@ -172,11 +172,10 @@ void MessageHandler::_handleINVITE(User& user, const Message& message, Server& s
 
         std::string nickName = message.getParams()[0];
         std::string channelName = message.getParams()[1];
-
         std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
         if (it == server.getChannelMap().end())
             server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
-        it->second.inviteUser(user, nickName);
+        it->second.inviteUser(user, nickName, server.getUserMap());
 }
 
 void MessageHandler::_handleTOPIC(User& user, const Message& message, Server& server) {

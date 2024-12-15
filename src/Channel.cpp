@@ -11,8 +11,7 @@ Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), log
         name.find(',') != std::string::npos)
     {
         logger.log(ERROR, "Invalid channel name: " + name);
-        this->name = ""; 
-        return;
+        throw std::invalid_argument("Invalid channel name: " + name);
     }
     logger.log(INFO, "Channel created: " + name);
 }
@@ -144,19 +143,20 @@ bool Channel::is_member(User& user)
     return (false);
 }
 
-void Channel::inviteUser(User& operator_user, std::string& tar_user) 
+
+void Channel::inviteUser(User& operator_user, std::string& tar_user, std::map<int, User>& Users) 
 {
-    std::map<int, User>::iterator target_it = members.end();
-    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
+    std::map<int, User>::iterator target_it = Users.end();
+    for (std::map<int, User>::iterator it = Users.begin(); it != Users.end(); ++it)
     {
         if (it->second.getNickname() == tar_user){
             target_it = it;
             break;
         }
     }
-    if (target_it == members.end()){
-        operator_user.sendMessage("441 " + tar_user + " " + name + " :They aren't on that channel");
-        throw (std::invalid_argument("441 " + tar_user + " " + name + " :They aren't on that channel"));
+    if (target_it == Users.end()){
+        operator_user.sendMessage("441 " + tar_user + " " + name + " :They do not exist");
+        throw (std::invalid_argument("441 " + tar_user + " " + name + " :They do not exist"));
     }
     User& target_user = target_it->second;
     if (!is_member(operator_user) || (!invite_only && !is_operator(operator_user))) 
