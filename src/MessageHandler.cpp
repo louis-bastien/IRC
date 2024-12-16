@@ -69,7 +69,7 @@ void MessageHandler::_handleNICK(User& user, const Message& message, Server& ser
 
 void MessageHandler::_handleUSER(User& user, const Message& message, Server& server) {
     if (!_validateUSER(message))
-        throw std::invalid_argument("Wrong command format for CAP");
+        throw std::invalid_argument("Wrong command format for USER");
     std::string username = message.getParams()[0];
     std::map<int, User>::iterator it = server.getUserMap().begin();
     while (it != server.getUserMap().end()) {
@@ -245,11 +245,11 @@ bool MessageHandler::_validateNICK(const Message& message) {
 }
 
 bool MessageHandler::_validateUSER(const Message& message) {
-    return message.getParams().size() == 3 && !message.getTrailing().empty();
+    return message.getParams().size() == 3 && message.getTrailing().empty();
 }
 
 bool MessageHandler::_validateJOIN(const Message& message) {
-    return (message.getParams().size() == 1 || message.getParams().size() == 2) && !message.getTrailing().empty();
+    return (message.getParams().size() == 1 || message.getParams().size() == 2) && message.getTrailing().empty();
 }
 
 bool MessageHandler::_validatePART(const Message& message) {
