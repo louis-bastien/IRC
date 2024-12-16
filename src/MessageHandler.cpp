@@ -103,7 +103,9 @@ void MessageHandler::_handleJOIN(User& user, const Message& message, Server& ser
         std::string currentChannel = channelNames.front();
         std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
         if (it == channelMap.end()) {
+            std::cout << "FLAG0" << std::endl;
             it = channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger()))).first;
+            std::cout << "FLAG1" << std::endl;
             server.getLogger().log(INFO, "Channel created: " + currentChannel);
         }
         if (it->second.isProtected()) {
