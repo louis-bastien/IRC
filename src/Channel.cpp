@@ -1,4 +1,6 @@
 #include "Channel.hpp"
+#include "Errors.hpp"
+
 
 //IN SERVER WE NEED TO CHECK IF THE NAME IS EMPTY AFTER THE CREATION OF THE CHANNEL BECAUSE IF YES THEN SEND MSG TO THE USER
 //Maybe throw std::invalid_argument if name of the channel is wrong
