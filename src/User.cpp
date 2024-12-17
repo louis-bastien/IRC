@@ -92,6 +92,41 @@ void User::setUsername(const std::string& username)
     logger.log(INFO, "Username set to " + username);
 }
 
+std::string User::getHostname() const
+{
+    return (this->hostname);
+}
+
+void User::setHostname(const std::string& hostname)
+{
+    if (this->is_registered) {
+        sendMessage(ERR_ALREADYREGISTERED + " " + getNickname().empty() ? "*" : getNickname() + " :You may not reregister");
+        throw std::invalid_argument("User is already registered can't change hostname.");
+    }
+    if (!this->is_authenticated) {
+        sendMessage(ERR_NOTREGISTERED + " " + getNickname().empty() ? "*" : getNickname() + " :You are not authenticated");
+        throw std::invalid_argument("User is not yet authenticated");
+    }
+    if (hostname.empty()) {
+        sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + hostname + " :Erroneous hostname");
+        throw std::invalid_argument("Attempted to set an empty hostname.");
+    }
+    if (!isalpha(hostname[0]) && hostname[0] != '-') {
+        sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + hostname + " :Erroneous hostname");
+        throw std::invalid_argument("Attempted to set invalid hostname.");
+    }
+    for (std::string::size_type i = 0; i < hostname.length(); ++i)
+    {
+        char c = hostname[i];
+        if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
+            sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + hostname + " :Erroneous hostname");
+            throw std::invalid_argument("Attempted to set invalid hostname.");
+        }
+    }
+    this->hostname = hostname;
+    logger.log(INFO, "Hostname set to " + hostname);
+}
+
 bool User::isAuthenticated() const
 {
     return(is_authenticated);
@@ -112,19 +147,27 @@ void User::authenticate()
     logger.log(INFO, "User authenticated successfully.");
 }
 
-void User::sendMessage(const std::string& message)
+void User::doRegister()
 {
-    std::string formattedMessage = ":ircserv " + message + "\r\n";
-    if (send(socket_fd, formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
-        logger.log(ERROR, "Failed to send message: " + message);
-    logger.log(DEBUG, "Sent message '" + message + "' to client fd=" + Utils::toString(socket_fd));    
+    if (is_authenticated && !username.empty() && !nickname.empty() && !hostname.empty())
+        this->is_registered = true;
+    sendMessage(RPL_WELCOME + " " + nickname + " :Welcome to the our IRC server");
+    sendMessage(RPL_YOURHOST + " " + nickname + " :Your host is running version 1.0");
+    sendMessage(RPL_CREATED + " " + nickname + " :This server was created by Anna and Louis");
+    sendMessage(RPL_MYINFO + " " + nickname + "We are compatible and compliant with basic IRC commands");
+    logger.log(INFO, "User " + nickname + "registered successfully.");
 }
 
-void User::leaveChannel(Channel& channel, std::string& reason) 
+void User::sendMessage(const std::string& message, bool serverPrefix)
 {
-    channel.removeUser(*this, reason);
-    channels.erase(std::remove(channels.begin(), channels.end(), channel.getName()), channels.end());
-    logger.log(INFO, nickname + " left channel " + channel.getName());
+    std::string formattedMessage;
+    if (serverPrefix)
+        formattedMessage = ":ircserv " + message + "\r\n";
+    else
+        formattedMessage = message + "\r\n";
+    if (send(socket_fd, formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
+        logger.log(ERROR, "Failed to send message: " + message);
+    logger.log(DEBUG, "Sent message '" + message + "' to client fd: " + Utils::toString(socket_fd));    
 }
 
 void User::leaveAllChannels(std::map<std::string, Channel>& allChannels) 
@@ -134,7 +177,7 @@ void User::leaveAllChannels(std::map<std::string, Channel>& allChannels)
         std::string channelName = *it;
         std::map<std::string, Channel>::iterator channelIt = allChannels.find(channelName);
         if (channelIt != allChannels.end()) 
-            channelIt->second.removeUser(*this, "Goodbye");
+            channelIt->second.partUser(*this, "Leaving server");
     }
     channels.clear();
     logger.log(INFO, nickname + " left all channels.");

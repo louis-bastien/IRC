@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "Message.hpp"
 #include "MessageHandler.hpp"
+#include "Errors.hpp"
 
 //Satic pipe fds used for signal handling with Epoll. 
 int Server::_pipeFd[2] = {-1, -1};
@@ -173,13 +174,25 @@ void Server::handleReadEvent(int eventFd) {
 }
 
 void Server::handleMessage(int clientFd, std::string& rawMessage) {
+    std::map<int, User>::iterator it = _userMap.find(clientFd);
+    if (it == _userMap.end())
+            throw::std::runtime_error("Could not find client fd=" + clientFd);
+    User& user = it->second;
+    if (rawMessage.size() > 512) {
+        user.sendMessage(ERR_INPUTTOOLONG + " " + user.getNickname().empty() ? "*" : user.getNickname() + " :Input line was too long");
+        _logger.log(WARNING, "Message too long: " + rawMessage);
+        return;
+    }
     try {
         Message msg(rawMessage);
         msg.logMsg(_logger);
-        MessageHandler::validateAndDispatch(clientFd, msg, *this);
+        MessageHandler::validateAndDispatch(user, msg, *this);
+        if (!user.isRegistered())
+            user.doRegister();
+        _logger.log(DEBUG, "Command handled without error");
     }
     catch (std::exception &e) { 
-        _logger.log(WARNING, "Error processing message: " + Utils::toString(e.what()) + ". Skipping...");
+        _logger.log(WARNING, "Error processing message: " + Utils::toString(e.what()));
     }
 }
 

@@ -19,6 +19,7 @@ class User
     private:
         std::string username;
         std::string nickname;
+        std::string hostname;
         int socket_fd;
         bool is_authenticated; //if pass command is received are verified
         bool is_registered; //if nick user and pass commands are verified
@@ -33,13 +34,13 @@ class User
         void setNickname(const std::string& nickname);
         std::string getUsername() const;
         void setUsername(const std::string& username);
+        std::string getHostname() const;
+        void setHostname(const std::string& hostname);
         bool isAuthenticated() const;
         bool isRegistered() const;
-        void sendMessage(const std::string& message);
-        void leaveChannel(Channel& channel, std::string& reason);
-        bool canRegister() const;
-        void authenticate();
         void doRegister();
+        void sendMessage(const std::string& message, bool serverPrefix = true);
+        void authenticate();
         int getSocketFd();
         void leaveAllChannels(std::map<std::string, Channel>& allChannels);
 };

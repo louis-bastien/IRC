@@ -13,7 +13,6 @@
 
 // User Errors
 #define ERR_NOTREGISTERED     451 // "451 <command> :You have not registered"
-#define ERR_ALREADYREGISTRED  462 // "462 :You may not reregister"
 
 // Channel Errors
 #define ERR_NOSUCHCHANNEL     403 // "403 <channel> :No such channel"
@@ -48,10 +47,35 @@
 #define ERR_NOTIMPLEMENTED    500 // "500 :Command not implemented"
 
 // Connection and Registration Errors
-#define ERR_ALREADYREGISTERED 462 // "462 :You may not reregister"
-#define ERR_ERRONEUSNICKNAME  432 // "432 <nickname> :Erroneous nickname"
-#define ERR_NICKNAMEINUSE     433 // "433 <nickname> :Nickname is already in use"
-#define ERR_PASSWDMISMATCH    464 // "464 :Password incorrect"
+#define ERR_INPUTTOOLONG      417 // "417 :Input line was too long"
+
+// Successful Command Replies
+#define RPL_WELCOME           001 // "001 <nick> :Welcome to the Internet Relay Network <nick>!<user>@<host>"
+#define RPL_YOURHOST          002 // "002 <nick> :Your host is <servername>, running version <ver>"
+#define RPL_CREATED           003 // "003 <nick> :This server was created <date>"
+#define RPL_MYINFO            004 // "004 <nick> <servername> <version> <usermodes> <chanmodes>"
+
+#define RPL_TOPIC             332 // "332 <channel> :<topic>"
+#define RPL_NOTOPIC           331 // "331 <channel> :No topic is set"
+
+#define RPL_INVITING          341 // "341 <nick> <channel> :Invitation successful"
+#define RPL_NAMREPLY          353 // "353 <nick> = <channel> :<nicknames>"
+#define RPL_ENDOFNAMES        366 // "366 <channel> :End of /NAMES list"
+
+#define RPL_LIST              322 // "322 <channel> <visible> :<topic>"
+#define RPL_LISTEND           323 // "323 :End of /LIST"
+
+#define RPL_WHOREPLY          352 // "352 <channel> <user> <host> <server> <nick> <flags> :<hopcount> <realname>"
+#define RPL_ENDOFWHO          315 // "315 <channel> :End of /WHO list"
+
+#define RPL_MOTDSTART         375 // "375 :Start of /MOTD message"
+#define RPL_MOTD              372 // "372 :<MOTD line>"
+#define RPL_ENDOFMOTD         376 // "376 :End of /MOTD command"
+
+#define RPL_YOUREOPER         381 // "381 :You are now an IRC operator"
+#define RPL_TIME              391 // "391 <server> :<time>"
+
+#define RPL_VERSION           351 // "351 <version>.<debuglevel> <server> :<comments>"
 
 // Quit/Disconnect Errors
 #define ERR_NOORIGIN          409 // "409 :No origin specified"

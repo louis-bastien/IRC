@@ -26,57 +26,65 @@ Channel::~Channel()
 //Also add channel to the user container "std::vector<std::string> channels;""
 void Channel::addUser(User& user, std::string password) 
 {
-    if (isProtected() && !password.empty() && password != this->password)
-        throw (std::invalid_argument("Wrong password for channel " + name + ": " + password)); 
-    if (!invite_only)
-    {
+    if (members.find(user.getSocketFd()) != members.end()) {
+            user.sendMessage(ERR_USERONCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + user.getUsername() + " " + name + " :is already on channel");
+            throw std::invalid_argument("User already in the channel");
+    }
+    if (is_protected) {
+        if (password.empty()) {
+            user.sendMessage(ERR_BADCHANNELKEY + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :Cannot join channel (+k)");
+            throw std::invalid_argument("User did not provide password");
+        } 
+        if (password != this->password) {
+            user.sendMessage(ERR_BADCHANNELKEY + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :Cannot join channel (+k)");
+            throw std::invalid_argument("Channel password incorrect");
+        }
+    }
+    if (invite_only) {
+        if (invited.find(user.getSocketFd()) == invited.end()) {
+            user.sendMessage(ERR_INVITEONLYCHAN + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :Cannot join channel (+i)");
+            throw std::invalid_argument("User tried to join channel without invitation");
+        }
         members.insert(std::make_pair(user.getSocketFd(), user));
-        if (members.size() == 1) 
-        {
-            operators.insert(std::make_pair(user.getSocketFd(), user));
-            logger.log(INFO, user.getNickname() + " is the operator of the channel " + name);
-        }
-        broadcast(user.getNickname() + " joined channel " + name);
+        invited.erase(user.getSocketFd());
+        broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " JOIN " + name);
+        return;
     }
-    else
-    {
-        if (invited.find(user.getSocketFd()) != invited.end())
-        {
-            members.insert(std::make_pair(user.getSocketFd(), user));
-            invited.erase(user.getSocketFd());
-            broadcast(user.getNickname() + " joined channel " + name);
-        }
-        else
-        {
-            user.sendMessage(name + "channel is invite-only");
-            logger.log(WARNING, user.getNickname() + " tried to join channel " + name + " without invitation");
-        }
+    members.insert(std::make_pair(user.getSocketFd(), user));
+    if (members.size() == 1) {
+        operators.insert(std::make_pair(user.getSocketFd(), user));
+        logger.log(INFO, user.getNickname() + " is the operator of the channel " + name);
     }
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " JOIN " + name);
 }
 
-void Channel::removeUser(User& user, std::string reason = "") 
+void Channel::partUser(User& user, std::string reason = "") 
 {
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + name + " :" + reason);
     members.erase(user.getSocketFd());
     operators.erase(user.getSocketFd());
-    logger.log(INFO, user.getNickname() + " left channel " + name + ". Reason: " + reason);
+    logger.log(INFO, "User " + user.getNickname() + " left channel " + name + (reason.empty() ? "" : " (Reason: " + reason + ")"));
 }
 
 void Channel::setTopic(User& user, const std::string& topic) 
 {
-    if (topic_restricted && !is_operator(user))
-    {
-        logger.log(WARNING, user.getNickname() + " tried to set the topic for channel " + name + " without permission.");
-        user.sendMessage("482 " + user.getNickname() + " :You're not a channel operator");
+    if (topic.empty()) {
+        if (this->topic.empty())
+            user.sendMessage(RPL_NOTOPIC + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :No topic is set");
+        else
+            user.sendMessage(RPL_TOPIC + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :" + this->topic);
         return;
     }
-    if (topic.length() > 512) 
-    {
-        logger.log(WARNING, user.getNickname() + " tried to set an overly long topic for channel " + name);
-        user.sendMessage("413 " + user.getNickname() + " :Topic is too long");
-        return;
+    if (!is_member(user)) {
+        user.sendMessage(ERR_NOTONCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :You're not on that channel");
+        throw std::invalid_argument("The user is not part of the channel");
+    }
+    if (topic_restricted && !is_operator(user)) {
+        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :You're not channel operator");
+        throw std::invalid_argument("The user is not a channel operator");
     }
     this->topic = topic;
-    broadcast(":" + user.getNickname() + " TOPIC " + name + " :" + topic);
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " TOPIC " + name + " :" + topic);
 }
 
 std::string Channel::getName() const
@@ -106,36 +114,31 @@ bool Channel::is_operator(User& user)
     return (false);
 }
 
-void Channel::kickUser(User& operator_user, std::string& tar_user, std::string& reason) 
+void Channel::kickUser(User& user, std::string& target, std::string& reason)
 {
-    std::map<int, User>::iterator target_it = members.end();
-    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
-    {
-        if (it->second.getNickname() == tar_user){
-            target_it = it;
+    if (!is_member(user)) {
+        user.sendMessage(ERR_NOTONCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :You're not on that channel");
+        throw std::invalid_argument("The user is not part of the channel");
+    }
+
+    if (!is_operator(user)) {
+        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :You're not channel operator");
+        throw std::invalid_argument("The user is not a channel operator");
+    }
+
+    std::map<int, User>::iterator it;
+    for (it = members.begin(); it != members.end(); ++it) {
+        if (it->second.getNickname() == target)
             break;
-        }
     }
-    if (target_it == members.end()){
-        operator_user.sendMessage("441 " + tar_user + " " + name + " :They aren't on that channel");
-        throw (std::invalid_argument("441 " + tar_user + " " + name + " :They aren't on that channel"));
+    if (it == members.end()) {
+        user.sendMessage(ERR_USERNOTINCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + target + " " + name + " :They aren't on that channel");
+        throw std::invalid_argument("The target user is not in the channel");
     }
-    User& target_user = target_it->second;
-    if (!is_operator(operator_user)) {
-        logger.log(WARNING, operator_user.getNickname() + " tried to kick " + target_user.getNickname() + " without operator privileges.");
-        operator_user.sendMessage("482 " + operator_user.getNickname() + " :You're not a channel operator");
-        return;
-    }
-    if (members.find(target_user.getSocketFd()) == members.end()) {
-        logger.log(WARNING, operator_user.getNickname() + " tried to kick a user who is not in the channel.");
-        operator_user.sendMessage("441 " + target_user.getNickname() + " " + name + " :They aren't on that channel");
-        return;
-    }
-    if (is_operator(target_user))
-        throw(std::invalid_argument("Operator " + operator_user.getNickname() + " tried to kick another operator " + target_user.getNickname()));
-    removeUser(target_user, reason);
-    broadcast(":" + operator_user.getNickname() + " KICK " + name + " " + target_user.getNickname() + " :" + reason);
-    target_user.sendMessage(":" + operator_user.getNickname() + " KICK " + name + " :" + reason);
+    User& target_user = it->second;
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " KICK " + name + " " + target + " :" + reason);
+    members.erase(target_user.getSocketFd());
+    operators.erase(target_user.getSocketFd());
 }
 
 bool Channel::is_member(User& user)
@@ -146,35 +149,32 @@ bool Channel::is_member(User& user)
 }
 
 
-void Channel::inviteUser(User& operator_user, std::string& tar_user, std::map<int, User>& Users) 
-{
-    std::map<int, User>::iterator target_it = Users.end();
-    for (std::map<int, User>::iterator it = Users.begin(); it != Users.end(); ++it)
-    {
-        if (it->second.getNickname() == tar_user){
-            target_it = it;
+void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& Users)  {
+    if (!is_member(user)) {
+        user.sendMessage(ERR_NOTONCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :You're not on that channel");
+        throw std::invalid_argument("The user is not part of the channel");
+    }
+
+    if (!is_operator(user)) {
+        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :You're not channel operator");
+        throw std::invalid_argument("The user is not a channel operator");
+    }
+    std::map<int, User>::iterator it;
+    for (it = Users.begin(); it != Users.end(); ++it) {
+        if (it->second.getNickname() == target)
             break;
-        }
     }
-    if (target_it == Users.end()){
-        operator_user.sendMessage("441 " + tar_user + " " + name + " :They do not exist");
-        throw (std::invalid_argument("441 " + tar_user + " " + name + " :They do not exist"));
+    if (it == Users.end()) {
+        user.sendMessage(ERR_NOSUCHNICK + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :No such nick/channel");
+        throw std::invalid_argument("The invited user does not exist");
     }
-    User& target_user = target_it->second;
-    if (!is_member(operator_user) || (!invite_only && !is_operator(operator_user))) 
-    {
-        logger.log(WARNING, operator_user.getNickname() + " tried to invite " + target_user.getNickname() + " without operator privileges.");
-        operator_user.sendMessage("482 " + operator_user.getNickname() + " :You're not a channel operator");
-        return;
-    }
-    if (members.find(target_user.getSocketFd()) != members.end()) {
-        logger.log(WARNING, operator_user.getNickname() + " tried to invite " + target_user.getNickname() + " who is already in the channel.");
-        operator_user.sendMessage("443 " + target_user.getNickname() + " " + name + " :is already on channel");
-        return;
+    User& target_user = it->second;
+    if (is_member(target_user)) {
+        user.sendMessage(ERR_USERONCHANNEL + " " + target_user.getNickname().empty() ? "*" : target_user.getNickname() + " " + name + " :is already on channel");
+        throw std::invalid_argument("The invited user is already on the the channel");
     }
     invited.insert(std::make_pair(target_user.getSocketFd(), target_user));
-    target_user.sendMessage(":" + operator_user.getNickname() + " INVITE " + target_user.getNickname() + " :" + name);
-    logger.log(INFO, operator_user.getNickname() + " invited " + target_user.getNickname() + " to channel " + name);
+    target_user.sendMessage(RPL_INVITING + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + target + " " + name + " :Invitation successful");
 }
 
 
@@ -245,14 +245,16 @@ void Channel::changeMode(User& operator_user, std::vector<std::string> params)
             operator_user.sendMessage("472 " + operator_user.getNickname() + " " + mode + " :is unknown mode char");
             return;
     }
-    broadcast(":" + operator_user.getNickname() + " MODE " + name + " " + (enable ? "+" : "-") + std::string(1, mode) + " " + mode_param);
+    broadcast(":" + operator_user.getNickname() + "!" + operator_user.getUsername() + "@" + operator_user.getHostname() + " MODE " + name + " " + (enable ? "+" : "-") + std::string(1, mode) + (mode_param.empty() ? "" : " " + mode_param));
 }
 
-
-
-void Channel::broadcast(std::string msg)
+void Channel::broadcast(std::string msg, bool serverPrefix)
 {
-    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
-        it->second.sendMessage(msg);
+    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it) {
+        if (serverPrefix)
+            it->second.sendMessage(msg);
+        else
+            it->second.sendMessage(msg, false);
+    }
     logger.log(INFO, msg);
 }

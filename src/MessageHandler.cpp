@@ -3,36 +3,32 @@
 
 std::map<std::string, MessageHandler::CommandHandler> MessageHandler::_cmdHandlers;
 
-void MessageHandler::_initCmdHandlers() {
+void MessageHandler::initCmdHandlers() {
     if (_cmdHandlers.empty()) {
-        MessageHandler::_cmdHandlers.insert(std::make_pair("CAP", &MessageHandler::_handleCAP));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("PASS", &MessageHandler::_handlePASS));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("NICK", &MessageHandler::_handleNICK));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("USER", &MessageHandler::_handleUSER));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("PING", &MessageHandler::_handlePING));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("JOIN", &MessageHandler::_handleJOIN));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("PART", &MessageHandler::_handlePART));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("KICK", &MessageHandler::_handleKICK));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("INVITE", &MessageHandler::_handleINVITE));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("TOPIC", &MessageHandler::_handleTOPIC));
-        MessageHandler::_cmdHandlers.insert(std::make_pair("MODE", &MessageHandler::_handleMODE));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("CAP", &MessageHandler::handleCAP));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("PASS", &MessageHandler::handlePASS));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("NICK", &MessageHandler::handleNICK));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("USER", &MessageHandler::handleUSER));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("PING", &MessageHandler::handlePING));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("JOIN", &MessageHandler::handleJOIN));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("PART", &MessageHandler::handlePART));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("KICK", &MessageHandler::handleKICK));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("INVITE", &MessageHandler::handleINVITE));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("TOPIC", &MessageHandler::handleTOPIC));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("MODE", &MessageHandler::handleMODE));
     }
 }
 
-void MessageHandler::validateAndDispatch(int clientFd, const Message& message, Server& server) {
-    _initCmdHandlers();
-    std::map<int, User>::iterator itUser = server.getUserMap().find(clientFd);
-    if (itUser == server.getUserMap().end())
-            throw::std::runtime_error("Could not find client");
-
+void MessageHandler::validateAndDispatch(User& user, const Message& message, Server& server) {
+    initCmdHandlers();
     std::map<std::string, CommandHandler>::iterator itCmd = _cmdHandlers.find(message.getCommand());
     if (itCmd != _cmdHandlers.end())
-        (itCmd->second)(itUser->second, message, server);
+        (itCmd->second)(user, message, server);
     else
         throw std::invalid_argument("Invalid Command: " + message.getCommand());
 }
 
-void MessageHandler::_handleCAP(User& user, const Message& message, Server& server) {
+void MessageHandler::handleCAP(User& user, const Message& message, Server& server) {
     validateCAP(message);
     if (message.getParams()[0] == "LS")
         user.sendMessage("CAP * LS :");
@@ -40,7 +36,7 @@ void MessageHandler::_handleCAP(User& user, const Message& message, Server& serv
         server.getLogger().log(DEBUG, "CAP END aknowledged");
 }
 
-void MessageHandler::_handlePASS(User& user, const Message& message, Server& server) {    
+void MessageHandler::handlePASS(User& user, const Message& message, Server& server) {    
     validatePASS(user, message);
     std::string password = message.getParams()[0];
     if (password != server.getPassword()) {
@@ -50,7 +46,7 @@ void MessageHandler::_handlePASS(User& user, const Message& message, Server& ser
     user.authenticate();
 }
 
-void MessageHandler::_handleNICK(User& user, const Message& message, Server& server) {
+void MessageHandler::handleNICK(User& user, const Message& message, Server& server) {
     validateNICK(user, message);
     std::string nickname = message.getParams()[0];
     std::map<int, User>::iterator it = server.getUserMap().begin();
@@ -64,43 +60,36 @@ void MessageHandler::_handleNICK(User& user, const Message& message, Server& ser
     user.setNickname(nickname);
 }
 
-void MessageHandler::_handleUSER(User& user, const Message& message, Server& server) {
+void MessageHandler::handleUSER(User& user, const Message& message, Server& server) {
     validateUSER(user, message);
     std::string username = message.getParams()[0];
+    std::string hostname = message.getParams()[1];
     user.setUsername(username);
+    user.setHostname(hostname);
 }
 
 
-void MessageHandler::_handlePING(User& user, const Message& message, Server& server) {
+void MessageHandler::handlePING(User& user, const Message& message, Server& server) {
     validatePING(user, message);
     user.sendMessage("PONG " + message.getParams()[0]);
 }
 
-void MessageHandler::_handleJOIN(User& user, const Message& message, Server& server) {
+void MessageHandler::handleJOIN(User& user, const Message& message, Server& server) {
     validateJOIN(user, message);
     std::map<std::string, Channel>& channelMap = server.getChannelMap();
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
-    std::vector<std::string> keys;
-    if (message.getParams().size() >= 2)
-        std::vector<std::string> keys = Utils::split(message.getParams()[1], ',');
+    std::vector<std::string> keys = message.getParams().size() >= 2 ? Utils::split(message.getParams()[1], ',') : std::vector<std::string>() ;
     while(!channelNames.empty()) {
         std::string currentChannel = channelNames.front();
         std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
         if (it == channelMap.end()) {
-            it = channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger()))).first;
+            channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger())));
             server.getLogger().log(INFO, "Channel created: #" + currentChannel);
+            continue;
         }
         if (it->second.isProtected()) {
-            if (!keys.empty() && !keys.front().empty()) {
-                try { 
-                    it->second.addUser(user, keys.front());
-                    keys.erase(keys.begin());
-                } catch (std::exception& e) {
-                    server.getLogger().log(WARNING, e.what());
-                }
-            }
-            else
-                throw std::invalid_argument("Channel requires a valid password");
+            it->second.addUser(user, keys.front());
+            keys.erase(keys.begin());
         }
         else 
             it->second.addUser(user);
@@ -108,91 +97,81 @@ void MessageHandler::_handleJOIN(User& user, const Message& message, Server& ser
     }
 }
 
-void MessageHandler::_handlePART(User& user, const Message& message, Server& server) {
-    if (!_validatePART(message))
-        throw std::invalid_argument("Wrong command format for PART");  
-    if (!_isRegistered(user, message.getCommand(), server)) return;
+void MessageHandler::handleINVITE(User& user, const Message& message, Server& server) {
+    validateINVITE(user, message);
+    std::string nickName = message.getParams()[0];
+    std::string channelName = message.getParams()[1];
+    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+    if (it == server.getChannelMap().end()) {
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+        throw std::invalid_argument("Channel does not exists");
+    }
+    it->second.inviteUser(user, nickName, server.getUserMap());
+}
 
+void MessageHandler::handlePART(User& user, const Message& message, Server& server) {
+    validatePART(user, message);
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
+    std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getParams()[1];
     std::map<std::string, Channel>& channelMap = server.getChannelMap();
-
     while(!channelNames.empty()) {
         std::string currentChannel = channelNames.front();
         std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
-        if (it == channelMap.end())
-            server.getLogger().log(WARNING, " Channel does not exist: " + currentChannel);
-        else {
-            std::string reason = message.getTrailing().empty() ? "Leaving" : message.getParams()[1];
-            it->second.removeUser(user, reason);
-            if (it->second.getMembers().empty()) {
-                channelMap.erase(it);
-                server.getLogger().log(INFO, "Channel removed: " + currentChannel);
-            }
+        if (it == channelMap.end()) {
+            user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + currentChannel + " :No such channel");
+            server.getLogger().log(WARNING, "Channel does not exist: " + currentChannel);
+            continue;
+        }
+        it->second.partUser(user, reason);
+        if (it->second.getMembers().empty()) {
+            channelMap.erase(it);
+            server.getLogger().log(INFO, "Empty channel removed: " + currentChannel);
+            continue;
         }
         channelNames.erase(channelNames.begin());
     }
 }
 
-void MessageHandler::_handleKICK(User& user, const Message& message, Server& server) {
-    if (!_validateKICK(message)) 
-        throw std::invalid_argument("Wrong command format for KICK");
-    if (!_isRegistered(user, message.getCommand(), server)) return;
-
-        std::string channelName = message.getParams()[0];
-        std::string targetName = message.getParams()[1];
-        std::string reason = message.getTrailing().empty() ? "" : message.getTrailing();
-
-        std::map<std::string, Channel>::iterator itChannel = server.getChannelMap().find(channelName);
-        if (itChannel == server.getChannelMap().end())
-            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
-
-        itChannel->second.kickUser(user, targetName, reason);
+void MessageHandler::handleKICK(User& user, const Message& message, Server& server) {
+    validateKICK(user, message);
+    std::string channelName = message.getParams()[0];
+    std::string targetName = message.getParams()[1];
+    std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getTrailing();
+    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+    if (it == server.getChannelMap().end()) {
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+        throw std::invalid_argument("Channel does not exists");
+    }
+    it->second.kickUser(user, targetName, reason);
 }
 
-void MessageHandler::_handleINVITE(User& user, const Message& message, Server& server) {
-    if (!_validateINVITE(message)) 
-        throw std::invalid_argument("Wrong command format for INVITE");
-    if (!_isRegistered(user, message.getCommand(), server)) return;
 
-        std::string nickName = message.getParams()[0];
-        std::string channelName = message.getParams()[1];
-        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
-        if (it == server.getChannelMap().end())
-            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
-        it->second.inviteUser(user, nickName, server.getUserMap());
+void MessageHandler::handleTOPIC(User& user, const Message& message, Server& server) {
+    validateTOPIC(user, message);
+    std::string channelName = message.getParams()[0];
+    std::string topicName = message.getParams().size() == 2 ? message.getParams()[1] : std::string();
+
+    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+    if (it == server.getChannelMap().end())
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+        throw std::invalid_argument("Channel does not exists");
+    it->second.setTopic(user, topicName);
 }
 
-void MessageHandler::_handleTOPIC(User& user, const Message& message, Server& server) {
-    if (!_validateTOPIC(message)) 
-        throw std::invalid_argument("Wrong command format for TOPIC");
-    if (!_isRegistered(user, message.getCommand(), server)) return;
+void MessageHandler::handleMODE(User& user, const Message& message, Server& server) {
+    validateMODE(user, message);
+    std::vector<std::string> paramsVec = message.getParams();
+    if (paramsVec[1] == "+i") {
+        user.sendMessage("MODE " + paramsVec[0] + " +i");
+        return;
+    }
+    std::string channelName = paramsVec[0];
 
-        std::string channelName = message.getParams()[0];
-        std::string topicName = message.getParams().size() == 2 ? message.getParams()[1] : "";
-
-        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
-        if (it == server.getChannelMap().end())
-            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
-        it->second.setTopic(user, topicName);
-}
-
-void MessageHandler::_handleMODE(User& user, const Message& message, Server& server) {
-    if (!_validateMODE(message)) 
-        throw std::invalid_argument("Wrong command format for MODE");
-    if (!_isRegistered(user, message.getCommand(), server)) return;
-
-        std::vector<std::string> paramsVec = message.getParams();
-        if (paramsVec[1] == "+i") {
-            user.sendMessage("MODE " + paramsVec[0] + " +i");
-            return;
-        }
-        std::string channelName = paramsVec[0];
-
-        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
-        if (it == server.getChannelMap().end())
-            server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
-        paramsVec.erase(paramsVec.begin());        
-        it->second.changeMode(user, paramsVec);
+    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+    if (it == server.getChannelMap().end())
+        server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
+    paramsVec.erase(paramsVec.begin());        
+    it->second.changeMode(user, paramsVec);
 }
 
 void MessageHandler::validateCAP(const Message& message) {
@@ -240,24 +219,59 @@ void MessageHandler::validateJOIN(User& user, const Message& message) {
     }
 }
 
-bool MessageHandler::_validatePART(const Message& message) {
-    return (message.getParams().size() == 1);
+void MessageHandler::validateINVITE(User& user, const Message& message) {
+    if (!user.isRegistered()) {
+        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
+    }
+    if (message.getParams().size() < 2) {
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
 }
 
-bool MessageHandler::_validateKICK(const Message& message) {
-    return (message.getParams().size() == 2);
+void MessageHandler::validatePART(User& user, const Message& message) {
+    if (!user.isRegistered()) {
+        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
+    }
+    if (message.getParams().size() == 0) {
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
 }
 
-bool MessageHandler::_validateINVITE(const Message& message) {
-    return (message.getParams().size() == 2 && message.getTrailing().empty());
+void MessageHandler::validateKICK(User& user, const Message& message) {
+    if (!user.isRegistered()) {
+        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
+    }
+    if (message.getParams().size() < 2) {
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
 }
 
-bool MessageHandler::_validateTOPIC(const Message& message) {
-    return (message.getParams().size() == 1 && message.getParams().size() == 2 && message.getTrailing().empty());
+void MessageHandler::validateTOPIC(User& user, const Message& message) {
+    if (!user.isRegistered()) {
+        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
+    }
+    if (message.getParams().size() == 0) {
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
 }
 
-bool MessageHandler::_validateMODE(const Message& message) {
-    return (message.getParams().size() == 2 && message.getTrailing().empty());
+void MessageHandler::validateMODE(User& user, const Message& message) {
+    if (!user.isRegistered()) {
+        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
+    }
+    if (message.getParams().size() < 2) {
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
 }
 
 /*

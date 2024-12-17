@@ -28,7 +28,7 @@ class Channel
         Channel(std::string& name, Logger& logger);
         ~Channel();
         void addUser(User& user, std::string password="");
-        void removeUser(User& user, std::string reason);
+        void partUser(User& user, std::string reason);
         void setTopic(User& user, const std::string& topic);
         std::string getName() const;
         std::string getTopic() const;
@@ -39,5 +39,5 @@ class Channel
         void inviteUser(User& operator_user, std::string& tar_user, std::map<int, User>& Users); 
         void changeMode(User& operator_user, std::vector<std::string>);
         bool isProtected(void);
-        void broadcast(std::string msg);
+        void broadcast(std::string msg, bool serverPrefix = true);
 };
