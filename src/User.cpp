@@ -1,4 +1,5 @@
 #include "User.hpp"
+#include "Errors.hpp"
 
 User::User(int socket_fd, Logger& logger) : username(""), nickname("*"), socket_fd(socket_fd),
             is_authenticated(false), is_registered(false), logger(logger) {}
@@ -27,20 +28,20 @@ User& User::operator=(const User& other)
 void User::setNickname(const std::string& nickname)
 {
     if (this->is_registered) {
-        sendMessage("462 ERR_ALREADYREGISTRED: User already registered.");
+        sendMessage(ERR_ALREADYREGISTERED + " " + getNickname().empty() ? "*" : getNickname() + " :You may not reregister");
         throw std::invalid_argument("User is already registered can't change nickname.");
     }
     if (nickname.empty()) {
-        sendMessage("431 ERR_NONICKNAMEGIVEN: No nickname provided.");
+        sendMessage(ERR_NONICKNAMEGIVEN + " " + getNickname().empty() ? "*" : getNickname() + " :No nickname given");
         throw std::invalid_argument("Attempted to set an empty nickname.");
     }
     if (nickname.length() > 9) {
-        sendMessage("432 ERR_ERRONEUSNICKNAME: Nickname is too long.");
+        sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " :Erroneous nickname (too long)");
         throw std::invalid_argument("Nickname too long: " + nickname);
     }
     if (!(isalpha(nickname[0]) || nickname[0] == '-' || nickname[0] == '[' || nickname[0] == ']' ||
         nickname[0] == '\\' || nickname[0] == '^' || nickname[0] == '_')) {
-        sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid first character in nickname.");
+        sendMessage(ERR_ERRONEUSNICKNAME +  " " + getNickname().empty() ? "*" : getNickname() + " " + nickname + " :Erroneous nickname");
         throw std::invalid_argument("Invalid nickname first character: " + nickname);
     }
     for (std::string::size_type i = 0; i < nickname.length(); ++i) 
@@ -48,7 +49,7 @@ void User::setNickname(const std::string& nickname)
         char c = nickname[i];
         if (!(isalnum(c) || c == '-' || c == '[' || c == ']' ||
         c == '\\' || c == '^' || c == '_')) {
-            sendMessage("432 ERR_ERRONEUSNICKNAME: Invalid character in nickname.");
+            sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + nickname + " :Erroneous nickname");
             throw std::invalid_argument("Invalid character in nickname: " + nickname);
         }
     }
@@ -64,29 +65,31 @@ std::string User::getUsername() const
 void User::setUsername(const std::string& username)
 {
     if (this->is_registered) {
-        sendMessage("462 ERR_ALREADYREGISTRED: User already registered.");
+        sendMessage(ERR_ALREADYREGISTERED + " " + getNickname().empty() ? "*" : getNickname() + " :You may not reregister");
         throw std::invalid_argument("User is already registered can't change username.");
     }
+    if (!this->is_authenticated) {
+        sendMessage(ERR_NOTREGISTERED + " " + getNickname().empty() ? "*" : getNickname() + " :You are not authenticated");
+        throw std::invalid_argument("User is not yet authenticated");
+    }
     if (username.empty()) {
-        sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
+        sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + username + " :Erroneous username");
         throw std::invalid_argument("Attempted to set an empty username.");
     }
     if (!isalpha(username[0]) && username[0] != '-'){
-        sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
+        sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + username + " :Erroneous username");
         throw std::invalid_argument("Attempted to set invalid username.");
     }
     for (std::string::size_type i = 0; i < username.length(); ++i)
     {
         char c = username[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
-            sendMessage("432 ERR_ERRONEUSUSERNAME: Invalid username.");
-            throw std::invalid_argument("Attempted to set an empty username.");
+            sendMessage(ERR_ERRONEUSNICKNAME + " " + getNickname().empty() ? "*" : getNickname() + " " + username + " :Erroneous username");
+            throw std::invalid_argument("Attempted to set invalid username.");
         }
     }
     this->username = username;
     logger.log(INFO, "Username set to " + username);
-    if (canRegister())
-        doRegister();
 }
 
 bool User::isAuthenticated() const
@@ -99,32 +102,14 @@ bool User::isRegistered() const
     return(is_registered);
 }
 
-bool User::canRegister() const
-{
-    return is_authenticated && !nickname.empty() && !username.empty();
-}
-
 void User::authenticate()
 {
-    if (is_authenticated) {
-        sendMessage("433 ERR_ALREADYREGISTERED: Already authenticated.");
-        logger.log(WARNING, "User attempted re-authentication. Ignoring.");
-        return;
+    if (this->is_registered) {
+        sendMessage(ERR_ALREADYREGISTERED + " " + getNickname().empty() ? "*" : getNickname() + " :You are already reigstered");
+        throw std::invalid_argument("User is already registered.");
     }
     this->is_authenticated = true;
     logger.log(INFO, "User authenticated successfully.");
-}
-
-void User::doRegister()
-{
-    this->is_registered = true;
-    logger.log(INFO, "User registered successfully.");
-
-    // Send registration completion messages
-    sendMessage("001 " + nickname + " :Welcome to the IRC server");
-    sendMessage("002 " + nickname + " :Your host is ircserv, running beta version 0.2");
-    sendMessage("003 " + nickname + " :This server was created for 42 School Project by adanylev and lbastien");
-    sendMessage("004 " + nickname + " Not many functions available yet");
 }
 
 void User::sendMessage(const std::string& message)

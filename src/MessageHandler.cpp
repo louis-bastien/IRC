@@ -1,4 +1,5 @@
 #include "MessageHandler.hpp"
+#include "Errors.hpp"
 
 std::map<std::string, MessageHandler::CommandHandler> MessageHandler::_cmdHandlers;
 
@@ -32,81 +33,62 @@ void MessageHandler::validateAndDispatch(int clientFd, const Message& message, S
 }
 
 void MessageHandler::_handleCAP(User& user, const Message& message, Server& server) {
-    if (!_validateCAP(message))
-        throw std::invalid_argument("Wrong command format for CAP");
+    validateCAP(message);
     if (message.getParams()[0] == "LS")
         user.sendMessage("CAP * LS :");
     else if (message.getParams()[0] == "END")
         server.getLogger().log(DEBUG, "CAP END aknowledged");
-    server.getLogger().log(DEBUG, "CAP command handled");
 }
 
 void MessageHandler::_handlePASS(User& user, const Message& message, Server& server) {    
-    if (!_validatePASS(message))
-        throw std::invalid_argument("Wrong command format for PASS");
-    if (message.getParams()[0] == server.getPassword())
-                    user.authenticate();
-    else {
-        user.sendMessage("464 ERR_PASSWDMISMATCH");
-        server.getLogger().log(WARNING, "Wrong Password Received");
+    validatePASS(user, message);
+    std::string password = message.getParams()[0];
+    if (password != server.getPassword()) {
+        user.sendMessage(ERR_PASSWDMISMATCH + " " + user.getNickname().empty() ? "*" : user.getNickname() + " :Password incorrect");
+        throw std::invalid_argument("Incorrect password provided: " + password);
     }
-    server.getLogger().log(DEBUG, "PASS command handled");
+    user.authenticate();
 }
 
 void MessageHandler::_handleNICK(User& user, const Message& message, Server& server) {
-    if (!_validateNICK(message))
-        throw std::invalid_argument("Wrong command format for CAP");
+    validateNICK(user, message);
     std::string nickname = message.getParams()[0];
     std::map<int, User>::iterator it = server.getUserMap().begin();
     while (it != server.getUserMap().end()) {
-        if (it->second.getNickname() == nickname)
+        if (it->second.getNickname() == nickname) {
+            user.sendMessage(ERR_NICKNAMEINUSE + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + nickname + " :Nickname is already in use");
             throw std::invalid_argument("Nickname already exists: " + nickname);
+        }
         it++;
     }
-    user.setNickname(message.getParams()[0]);
-    server.getLogger().log(DEBUG, "NICK command handled");
+    user.setNickname(nickname);
 }
 
 void MessageHandler::_handleUSER(User& user, const Message& message, Server& server) {
-    if (!_validateUSER(message))
-        throw std::invalid_argument("Wrong command format for USER");
+    validateUSER(user, message);
     std::string username = message.getParams()[0];
-    std::map<int, User>::iterator it = server.getUserMap().begin();
-    while (it != server.getUserMap().end()) {
-        if (it->second.getUsername() == username)
-            throw std::invalid_argument("Nickname already exists: " + username);
-        it++;
-    }
-    user.setUsername(message.getParams()[0]);
-    server.getLogger().log(DEBUG, "USER command handled");
+    user.setUsername(username);
 }
 
 
 void MessageHandler::_handlePING(User& user, const Message& message, Server& server) {
-    if (message.getParams().empty())
-        user.sendMessage("409 ERR_NOORIGIN: No origin specified");
-    else
-        user.sendMessage("PONG " + message.getParams()[0]);
-    server.getLogger().log(DEBUG, "PING command handled");
+    validatePING(user, message);
+    user.sendMessage("PONG " + message.getParams()[0]);
 }
 
 void MessageHandler::_handleJOIN(User& user, const Message& message, Server& server) {
-    if (!_validateJOIN(message))
-        throw std::invalid_argument("Wrong command format for JOIN");  
-    if (!_isRegistered(user, message.getCommand(), server)) 
-        return;
-    std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
-    std::vector<std::string> keys = Utils::split(message.getParams()[1], ',');
+    validateJOIN(user, message);
     std::map<std::string, Channel>& channelMap = server.getChannelMap();
-
+    std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
+    std::vector<std::string> keys;
+    if (message.getParams().size() >= 2)
+        std::vector<std::string> keys = Utils::split(message.getParams()[1], ',');
     while(!channelNames.empty()) {
         std::string currentChannel = channelNames.front();
         std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
         if (it == channelMap.end()) {
-            std::cout << "FLAG0" << std::endl;
             it = channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger()))).first;
-            std::cout << "FLAG1" << std::endl;
-            server.getLogger().log(INFO, "Channel created: " + currentChannel);
+            server.getLogger().log(INFO, "Channel created: #" + currentChannel);
         }
         if (it->second.isProtected()) {
             if (!keys.empty() && !keys.front().empty()) {
@@ -213,44 +195,49 @@ void MessageHandler::_handleMODE(User& user, const Message& message, Server& ser
         it->second.changeMode(user, paramsVec);
 }
 
-
-
-bool MessageHandler::_isAuthenticated(User& user, const std::string& command, Server& server) {
-    if (!user.isAuthenticated()) {
-        user.sendMessage("464 ERR_PASSWDMISMATCH");
-        server.getLogger().log(WARNING, "Unauthorized command: " + command);
-        return false;
-    }
-    return true;
+void MessageHandler::validateCAP(const Message& message) {
+    if (message.getParams().size() == 1 && (message.getParams()[0] == "LS" || message.getParams()[0] == "END"))
+        return;
+    throw std::invalid_argument("Wrong command format");
 }
 
-bool MessageHandler::_isRegistered(User& user, const std::string& command, Server& server) {
+void MessageHandler::validatePASS(User& user, const Message& message) {
+    if (message.getParams().size() == 1) 
+        return;
+    user.sendMessage(ERR_NEEDMOREPARAMS +  " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() +  " :Not enough parameter");
+    throw std::invalid_argument("Wrong command format");
+}
+
+void MessageHandler::validateNICK(User& user, const Message& message) {
+     if (message.getParams().size() == 1) 
+        return;
+    user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() +  " :Not enough parameter");
+    throw std::invalid_argument("Wrong command format");
+}
+
+void MessageHandler::validateUSER(User& user, const Message& message) {
+    if (message.getParams().size() == 3 && !message.getTrailing().empty())
+        return;
+    user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() +  " :Not enough parameter");
+    throw std::invalid_argument("Wrong command format");
+}
+
+void MessageHandler::validatePING(User& user, const Message& message) {
+    if (!message.getParams().empty())
+        return;
+    user.sendMessage(ERR_NOORIGIN + " :No origin specified");
+    throw std::invalid_argument("Wrong command format");
+}
+
+void MessageHandler::validateJOIN(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage("451 ERR_NOTREGISTERED");
-        server.getLogger().log(WARNING, "Unauthorized command: " + command);
-        return false;
+        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
     }
-    return true;
-}
-
-bool MessageHandler::_validateCAP(const Message& message) {
-    return message.getTrailing().empty() && ((message.getParams()[0] == "LS" || message.getParams()[0] == "END"));
-}
-
-bool MessageHandler::_validatePASS(const Message& message) {
-    return message.getParams().size() == 1 && message.getTrailing().empty();
-}
-
-bool MessageHandler::_validateNICK(const Message& message) {
-    return message.getParams().size() == 1 && message.getTrailing().empty();
-}
-
-bool MessageHandler::_validateUSER(const Message& message) {
-    return message.getParams().size() == 3 && message.getTrailing().empty();
-}
-
-bool MessageHandler::_validateJOIN(const Message& message) {
-    return (message.getParams().size() == 1 || message.getParams().size() == 2) && message.getTrailing().empty();
+    if (message.getParams().size() == 0) {
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
 }
 
 bool MessageHandler::_validatePART(const Message& message) {
