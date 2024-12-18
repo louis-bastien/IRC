@@ -22,6 +22,7 @@ class Channel
         bool    topic_restricted;
         bool    invite_only;
         bool    is_protected;
+        int     user_limit;
         std::string password;
 
     public:
@@ -35,9 +36,10 @@ class Channel
         std::map<int, User> getMembers() const;
         bool is_operator(User& user); // create a function that will handle cases if is not operator
         bool is_member(User& user);
-        void kickUser(User& operator_user, std::string& target_user, std::string& reason); // is operator tries to kick then error
-        void inviteUser(User& operator_user, std::string& tar_user, std::map<int, User>& Users); 
-        void changeMode(User& operator_user, std::vector<std::string>);
+        void kickUser(User& user, std::string& target, std::string& reason); // is operator tries to kick then error
+        void inviteUser(User& user, std::string& target, std::map<int, User>& Users); 
+        void printMode(User& user);
+        void changeMode(User& user, std::vector<std::string>);
         bool isProtected(void);
         void broadcast(std::string msg, bool serverPrefix = true);
 };

@@ -18,6 +18,7 @@
 #define ERR_NOSUCHCHANNEL     403 // "403 <channel> :No such channel"
 #define ERR_USERONCHANNEL     443 // "443 <user> <channel> :is already on channel"
 #define ERR_NOTONCHANNEL      442 // "442 <channel> :You're not on that channel"
+#define ERR_KEYSET            467 // "467 <channel> :Channel key already set"
 #define ERR_CHANNELISFULL     471 // "471 <channel> :Cannot join channel (+l)"
 #define ERR_INVITEONLYCHAN    473 // "473 <channel> :Cannot join channel (+i)"
 #define ERR_BADCHANNELKEY     475 // "475 <channel> :Cannot join channel (+k)"
@@ -64,6 +65,7 @@
 
 #define RPL_LIST              322 // "322 <channel> <visible> :<topic>"
 #define RPL_LISTEND           323 // "323 :End of /LIST"
+#define RPL_CHANNELMODEIS     324 // "324 <nick> <channel> <chanmodes>"
 
 #define RPL_WHOREPLY          352 // "352 <channel> <user> <host> <server> <nick> <flags> :<hopcount> <realname>"
 #define RPL_ENDOFWHO          315 // "315 <channel> :End of /WHO list"

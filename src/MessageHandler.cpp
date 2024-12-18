@@ -161,15 +161,26 @@ void MessageHandler::handleTOPIC(User& user, const Message& message, Server& ser
 void MessageHandler::handleMODE(User& user, const Message& message, Server& server) {
     validateMODE(user, message);
     std::vector<std::string> paramsVec = message.getParams();
+    if (paramsVec[0][0] == '#' || paramsVec[0][0] == '&') {
+        std::string channelName = paramsVec[0];
+        std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+        if (it == server.getChannelMap().end()) {
+            user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+            throw std::invalid_argument("Channel does not exists");
+        }
+        paramsVec.erase(paramsVec.begin());
+        if (paramsVec.empty())
+            it->second.printMode(user);
+        else
+            it->second.changeMode(user, paramsVec);
+    }
+    else {}
     if (paramsVec[1] == "+i") {
         user.sendMessage("MODE " + paramsVec[0] + " +i");
         return;
     }
     std::string channelName = paramsVec[0];
 
-    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
-    if (it == server.getChannelMap().end())
-        server.getLogger().log(WARNING, " Channel does not exist: " + channelName);
     paramsVec.erase(paramsVec.begin());        
     it->second.changeMode(user, paramsVec);
 }
@@ -268,7 +279,7 @@ void MessageHandler::validateMODE(User& user, const Message& message) {
         user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
-    if (message.getParams().size() < 2) {
+    if (message.getParams().size() == 0) {
         user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
         throw std::invalid_argument("Wrong command format");
     }
