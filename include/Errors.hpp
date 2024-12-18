@@ -56,6 +56,7 @@
 #define RPL_CREATED           003 // "003 <nick> :This server was created <date>"
 #define RPL_MYINFO            004 // "004 <nick> <servername> <version> <usermodes> <chanmodes>"
 
+#define RPL_UMODEIS           221 // "221 <nick> :<usermodes>"
 #define RPL_TOPIC             332 // "332 <channel> :<topic>"
 #define RPL_NOTOPIC           331 // "331 <channel> :No topic is set"
 

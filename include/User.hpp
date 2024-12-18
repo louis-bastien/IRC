@@ -23,6 +23,7 @@ class User
         int socket_fd;
         bool is_authenticated; //if pass command is received are verified
         bool is_registered; //if nick user and pass commands are verified
+        bool is_visible;
         std::vector<std::string> channels;
         Logger& logger;
     
@@ -40,6 +41,7 @@ class User
         bool isRegistered() const;
         void doRegister();
         void sendMessage(const std::string& message, bool serverPrefix = true);
+        void changeMode(std::vector<std::string> params);
         void authenticate();
         int getSocketFd();
         void leaveAllChannels(std::map<std::string, Channel>& allChannels);

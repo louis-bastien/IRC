@@ -2,7 +2,7 @@
 #include "Errors.hpp"
 
 User::User(int socket_fd, Logger& logger) : username(""), nickname("*"), socket_fd(socket_fd),
-            is_authenticated(false), is_registered(false), logger(logger) {}
+            is_authenticated(false), is_registered(false), is_visible(true), logger(logger) {}
 
 std::string User::getNickname() const
 {
@@ -169,6 +169,29 @@ void User::sendMessage(const std::string& message, bool serverPrefix)
         logger.log(ERROR, "Failed to send message: " + message);
     logger.log(DEBUG, "Sent message '" + message + "' to client fd: " + Utils::toString(socket_fd));    
 }
+
+void User::changeMode(std::vector<std::string> params) 
+{
+    if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
+        sendMessage(ERR_UNKNOWNMODE + " " + nickname.empty() ? "*" : nickname + " :Is unknown mode char");
+        throw std::invalid_argument("Mode flag(s) incorrect");
+    }
+    bool enable = params[0][0] == '+';
+    for (int i = 1; i < params[0].size(); i++) {
+        char mode = params[0][i];
+        switch (mode) 
+        {
+            case 'i':
+                is_visible = enable;
+                break;
+            default:
+                sendMessage(ERR_UNKNOWNMODE + " " + nickname.empty() ? "*" : nickname + " :Is unknown mode char");
+                throw std::invalid_argument("Mode flag(s) incorrect");
+        }
+    }
+    sendMessage(RPL_UMODEIS + " " + nickname.empty() ? "*" : nickname + " " + params[0]);
+}
+
 
 void User::leaveAllChannels(std::map<std::string, Channel>& allChannels) 
 {

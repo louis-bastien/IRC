@@ -174,15 +174,20 @@ void MessageHandler::handleMODE(User& user, const Message& message, Server& serv
         else
             it->second.changeMode(user, paramsVec);
     }
-    else {}
-    if (paramsVec[1] == "+i") {
-        user.sendMessage("MODE " + paramsVec[0] + " +i");
-        return;
+    else {
+        std::string nickname = paramsVec[0];
+        std::map<int, User>::iterator it = server.getUserMap().begin();
+        while (it != server.getUserMap().end()) {
+            if (it->second.getNickname() == nickname) {
+                paramsVec.erase(paramsVec.begin());
+                it->second.changeMode(paramsVec);
+                return;
+            }
+        }
+        user.sendMessage(ERR_NOSUCHNICK + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + nickname + " :No such nick/channel");
+        throw std::invalid_argument("The target user does not exist");
+        it++;
     }
-    std::string channelName = paramsVec[0];
-
-    paramsVec.erase(paramsVec.begin());        
-    it->second.changeMode(user, paramsVec);
 }
 
 void MessageHandler::validateCAP(const Message& message) {
