@@ -210,7 +210,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
     }
     if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
         user.sendMessage(ERR_UNKNOWNMODE + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :Is unknown mode char");
-        throw std::invalid_argument("Mode flag(s) incorrect");
+        throw std::invalid_argument("Channel mode flag(s) incorrect");
     }
     bool enable = params[0][0] == '+';
     int param_index = 1;
@@ -225,7 +225,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 topic_restricted = enable;
                 break;
             case 'k':
-                if (param_index > params.size()) {
+                if (param_index >= params.size()) {
                     user.sendMessage(ERR_NEEDMOREPARAMS +  " " + user.getNickname().empty() ? "*" : user.getNickname() + " MODE :Not enough parameter");
                     throw std::invalid_argument("Missing the new channel password");
                 }
@@ -233,6 +233,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                     if (is_protected && !password.empty()) {
                         user.sendMessage(ERR_KEYSET +  " " + user.getNickname().empty() ? "*" : user.getNickname() + " :Channel key already set");
                         throw std::invalid_argument("Channel password already set");
+                    }
                     password = params[param_index++];
                 }
                 else
@@ -240,7 +241,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 is_protected = enable;
                 break;
             case 'o':
-                if (param_index > params.size())
+                if (param_index > params.size()) {
                     user.sendMessage(ERR_NEEDMOREPARAMS +  " " + user.getNickname().empty() ? "*" : user.getNickname() + " MODE :Not enough parameter");
                     throw std::invalid_argument("Missing the channel operator parameter");
                 }
@@ -265,7 +266,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 break;
             default:
                 user.sendMessage(ERR_UNKNOWNMODE + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + name + " :Is unknown mode char");
-                throw std::invalid_argument("Mode flag(s) incorrect");
+                throw std::invalid_argument("Channel mode flag(s) incorrect");
         }
     }
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " MODE " + name + " " + params[0]);

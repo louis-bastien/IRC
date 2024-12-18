@@ -16,6 +16,7 @@ void MessageHandler::initCmdHandlers() {
         MessageHandler::_cmdHandlers.insert(std::make_pair("INVITE", &MessageHandler::handleINVITE));
         MessageHandler::_cmdHandlers.insert(std::make_pair("TOPIC", &MessageHandler::handleTOPIC));
         MessageHandler::_cmdHandlers.insert(std::make_pair("MODE", &MessageHandler::handleMODE));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("PRIVMSG", &MessageHandler::handlePRIVMSG));
     }
 }
 
@@ -40,7 +41,7 @@ void MessageHandler::handlePASS(User& user, const Message& message, Server& serv
     validatePASS(user, message);
     std::string password = message.getParams()[0];
     if (password != server.getPassword()) {
-        user.sendMessage(ERR_PASSWDMISMATCH + " " + user.getNickname().empty() ? "*" : user.getNickname() + " :Password incorrect");
+        user.sendMessage(ERR_PASSWDMISMATCH + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " :Password incorrect");
         throw std::invalid_argument("Incorrect password provided: " + password);
     }
     user.authenticate();
@@ -52,7 +53,7 @@ void MessageHandler::handleNICK(User& user, const Message& message, Server& serv
     std::map<int, User>::iterator it = server.getUserMap().begin();
     while (it != server.getUserMap().end()) {
         if (it->second.getNickname() == nickname) {
-            user.sendMessage(ERR_NICKNAMEINUSE + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + nickname + " :Nickname is already in use");
+            user.sendMessage(ERR_NICKNAMEINUSE + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + nickname + " :Nickname is already in use");
             throw std::invalid_argument("Nickname already exists: " + nickname);
         }
         it++;
@@ -103,7 +104,7 @@ void MessageHandler::handleINVITE(User& user, const Message& message, Server& se
     std::string channelName = message.getParams()[1];
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end()) {
-        user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
         throw std::invalid_argument("Channel does not exists");
     }
     it->second.inviteUser(user, nickName, server.getUserMap());
@@ -118,8 +119,9 @@ void MessageHandler::handlePART(User& user, const Message& message, Server& serv
         std::string currentChannel = channelNames.front();
         std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
         if (it == channelMap.end()) {
-            user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + currentChannel + " :No such channel");
+            user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + currentChannel + " :No such channel");
             server.getLogger().log(WARNING, "Channel does not exist: " + currentChannel);
+            channelNames.erase(channelNames.begin());
             continue;
         }
         it->second.partUser(user, reason);
@@ -139,12 +141,11 @@ void MessageHandler::handleKICK(User& user, const Message& message, Server& serv
     std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getTrailing();
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end()) {
-        user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
         throw std::invalid_argument("Channel does not exists");
     }
     it->second.kickUser(user, targetName, reason);
 }
-
 
 void MessageHandler::handleTOPIC(User& user, const Message& message, Server& server) {
     validateTOPIC(user, message);
@@ -153,7 +154,7 @@ void MessageHandler::handleTOPIC(User& user, const Message& message, Server& ser
 
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end())
-        user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
         throw std::invalid_argument("Channel does not exists");
     it->second.setTopic(user, topicName);
 }
@@ -165,7 +166,7 @@ void MessageHandler::handleMODE(User& user, const Message& message, Server& serv
         std::string channelName = paramsVec[0];
         std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
         if (it == server.getChannelMap().end()) {
-            user.sendMessage(ERR_NOSUCHCHANNEL + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + channelName + " :No such channel");
+            user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
             throw std::invalid_argument("Channel does not exists");
         }
         paramsVec.erase(paramsVec.begin());
@@ -184,9 +185,51 @@ void MessageHandler::handleMODE(User& user, const Message& message, Server& serv
                 return;
             }
         }
-        user.sendMessage(ERR_NOSUCHNICK + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + nickname + " :No such nick/channel");
+        user.sendMessage(ERR_NOSUCHNICK + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + nickname + " :No such nick/channel");
         throw std::invalid_argument("The target user does not exist");
         it++;
+    }
+}
+
+void MessageHandler::handleKICK(User& user, const Message& message, Server& server) {
+    validateKICK(user, message);
+    std::string channelName = message.getParams()[0];
+    std::string targetName = message.getParams()[1];
+    std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getTrailing();
+    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
+    if (it == server.getChannelMap().end()) {
+        user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
+        throw std::invalid_argument("Channel does not exists");
+    }
+    it->second.kickUser(user, targetName, reason);
+}
+
+void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& server) {
+    validatePRIVMSG(user, message);
+    std::vector<std::string> params = Utils::split(message.getParams()[0], ',');
+    for (int i = 0; i < params.size(); i++) {
+        std::string currentParam = params[i];
+        if (currentParam[0] == '#' || currentParam[0] == '&') {
+            std::map<std::string, Channel>::iterator it = server.getChannelMap().find(currentParam);
+            if (it == server.getChannelMap().end()) {
+                user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + currentParam + " :No such channel");
+                server.getLogger().log(WARNING, "Channel " + currentParam + " does not exist");
+                continue;
+            }
+            it->second.broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing());
+        }
+        else {
+            std::map<int, User>::iterator it;
+            for (it = server.getUserMap().begin(); it != server.getUserMap().end(); ++it) {
+                if (it->second.getNickname() == currentParam)
+                    break;
+            }
+            if (it == server.getUserMap().end()) {
+                user.sendMessage(ERR_NOSUCHNICK + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + currentParam + " :No such nick/channel");
+                server.getLogger().log(WARNING, "User " + currentParam + " does not exist");
+            }
+            it->second.sendMessage(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG :" + message.getTrailing());
+        }
     }
 }
 
@@ -199,21 +242,21 @@ void MessageHandler::validateCAP(const Message& message) {
 void MessageHandler::validatePASS(User& user, const Message& message) {
     if (message.getParams().size() == 1) 
         return;
-    user.sendMessage(ERR_NEEDMOREPARAMS +  " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() +  " :Not enough parameter");
+    user.sendMessage(ERR_NEEDMOREPARAMS +  " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() +  " :Not enough parameter");
     throw std::invalid_argument("Wrong command format");
 }
 
 void MessageHandler::validateNICK(User& user, const Message& message) {
      if (message.getParams().size() == 1) 
         return;
-    user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() +  " :Not enough parameter");
+    user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() +  " :Not enough parameter");
     throw std::invalid_argument("Wrong command format");
 }
 
 void MessageHandler::validateUSER(User& user, const Message& message) {
     if (message.getParams().size() == 3 && !message.getTrailing().empty())
         return;
-    user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() +  " :Not enough parameter");
+    user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() +  " :Not enough parameter");
     throw std::invalid_argument("Wrong command format");
 }
 
@@ -226,66 +269,81 @@ void MessageHandler::validatePING(User& user, const Message& message) {
 
 void MessageHandler::validateJOIN(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
     if (message.getParams().size() == 0) {
-        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :Not enough parameters");
         throw std::invalid_argument("Wrong command format");
     }
 }
 
 void MessageHandler::validateINVITE(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
     if (message.getParams().size() < 2) {
-        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :Not enough parameters");
         throw std::invalid_argument("Wrong command format");
     }
 }
 
 void MessageHandler::validatePART(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
     if (message.getParams().size() == 0) {
-        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :Not enough parameters");
         throw std::invalid_argument("Wrong command format");
     }
 }
 
 void MessageHandler::validateKICK(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
     if (message.getParams().size() < 2) {
-        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :Not enough parameters");
         throw std::invalid_argument("Wrong command format");
     }
 }
 
 void MessageHandler::validateTOPIC(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
     if (message.getParams().size() == 0) {
-        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :Not enough parameters");
         throw std::invalid_argument("Wrong command format");
     }
 }
 
 void MessageHandler::validateMODE(User& user, const Message& message) {
     if (!user.isRegistered()) {
-        user.sendMessage(ERR_NOTREGISTERED + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :You have not registered");
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered.");
     }
     if (message.getParams().size() == 0) {
-        user.sendMessage(ERR_NEEDMOREPARAMS + " " + user.getNickname().empty() ? "*" : user.getNickname() + " " + message.getCommand() + " :Not enough parameters");
+        user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Wrong command format");
+    }
+}
+
+void MessageHandler::validatePRIVMSG(User& user, const Message& message) {
+    if (!user.isRegistered()) {
+        user.sendMessage(ERR_NOTREGISTERED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :You have not registered");
+        throw std::invalid_argument("User not registered.");
+    }
+    if (message.getParams().size() == 0) {
+        user.sendMessage(ERR_NORECIPIENT + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :No recipient given");
+        throw std::invalid_argument("Wrong command format");
+    }
+    if (message.getTrailing().empty()) {
+        user.sendMessage(ERR_NOTEXTTOSEND + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() + " :No text to send");
         throw std::invalid_argument("Wrong command format");
     }
 }

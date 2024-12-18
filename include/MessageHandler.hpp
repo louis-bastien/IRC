@@ -25,6 +25,7 @@ class MessageHandler {
         static void handleINVITE(User& user, const Message& message, Server& server);
         static void handleTOPIC(User& user, const Message& message, Server& server);
         static void handleMODE(User& user, const Message& message, Server& server);
+        static void handlePRIVMSG(User& user, const Message& message, Server& server);
 
         static void validateCAP(const Message& message);
         static void validatePASS(User& user, const Message& message);
@@ -37,4 +38,5 @@ class MessageHandler {
         static void validateKICK(User& user, const Message& message);
         static void validateTOPIC(User& user, const Message& message);
         static void validateMODE(User& user, const Message& message);
+        static void validatePRIVMSG(User& user, const Message& message);
 };

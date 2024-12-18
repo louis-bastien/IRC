@@ -174,7 +174,7 @@ void User::changeMode(std::vector<std::string> params)
 {
     if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
         sendMessage(ERR_UNKNOWNMODE + " " + nickname.empty() ? "*" : nickname + " :Is unknown mode char");
-        throw std::invalid_argument("Mode flag(s) incorrect");
+        throw std::invalid_argument("User mode flag(s) incorrect");
     }
     bool enable = params[0][0] == '+';
     for (int i = 1; i < params[0].size(); i++) {
@@ -186,7 +186,7 @@ void User::changeMode(std::vector<std::string> params)
                 break;
             default:
                 sendMessage(ERR_UNKNOWNMODE + " " + nickname.empty() ? "*" : nickname + " :Is unknown mode char");
-                throw std::invalid_argument("Mode flag(s) incorrect");
+                throw std::invalid_argument("User mode flag(s) incorrect");
         }
     }
     sendMessage(RPL_UMODEIS + " " + nickname.empty() ? "*" : nickname + " " + params[0]);
