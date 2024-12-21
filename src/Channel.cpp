@@ -27,7 +27,7 @@ Channel::~Channel()
 void Channel::addUser(User& user, std::string password) 
 {
     if (members.find(user.getSocketFd()) != members.end()) {
-            user.sendErrorMessage(ERR_USERONCHANNEL, user,  user.getUsername() + " " + name + " :is already on channel");
+            user.sendErrorMessage(ERR_USERONCHANNEL, user, user.getUsername() + " " + name + " :is already on channel");
             throw std::invalid_argument("User already in the channel");
     }
     if (is_protected) {
@@ -132,7 +132,7 @@ void Channel::kickUser(User& user, std::string& target, std::string& reason)
             break;
     }
     if (it == members.end()) {
-        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user,   target + " " + name + " :They aren't on that channel");
+        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, target + " " + name + " :They aren't on that channel");
         throw std::invalid_argument("The target user is not in the channel");
     }
     User& target_user = it->second;
@@ -231,7 +231,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                         throw std::invalid_argument("Missing the new channel password");
                     }
                     if (is_protected && !password.empty()) {
-                        user.sendErrorMessage(ERR_KEYSET, user, " :Channel key already set");
+                        user.sendErrorMessage(ERR_KEYSET, user, " Channel key already set");
                         throw std::invalid_argument("Channel password already set");
                     }
                     password = params[param_index++];
