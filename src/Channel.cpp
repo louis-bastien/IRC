@@ -27,22 +27,22 @@ Channel::~Channel()
 void Channel::addUser(User& user, std::string password) 
 {
     if (members.find(user.getSocketFd()) != members.end()) {
-            user.sendMessage(ERR_USERONCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + user.getUsername() + " " + name + " :is already on channel");
+            user.sendErrorMessage(ERR_USERONCHANNEL, user,  user.getUsername() + " " + name + " :is already on channel");
             throw std::invalid_argument("User already in the channel");
     }
     if (is_protected) {
         if (password.empty()) {
-            user.sendMessage(ERR_BADCHANNELKEY + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :Cannot join channel (+k)");
+            user.sendErrorMessage(ERR_BADCHANNELKEY, user, name + " :Cannot join channel (+k)");
             throw std::invalid_argument("User did not provide password");
         } 
         if (password != this->password) {
-            user.sendMessage(ERR_BADCHANNELKEY + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :Cannot join channel (+k)");
+            user.sendErrorMessage(ERR_BADCHANNELKEY, user, name + " :Cannot join channel (+k)");
             throw std::invalid_argument("Channel password incorrect");
         }
     }
     if (invite_only) {
         if (invited.find(user.getSocketFd()) == invited.end()) {
-            user.sendMessage(ERR_INVITEONLYCHAN + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :Cannot join channel (+i)");
+            user.sendErrorMessage(ERR_INVITEONLYCHAN, user, name + " :Cannot join channel (+i)");
             throw std::invalid_argument("User tried to join channel without invitation");
         }
         members.insert(std::make_pair(user.getSocketFd(), user));
@@ -70,17 +70,17 @@ void Channel::setTopic(User& user, const std::string& topic)
 {
     if (topic.empty()) {
         if (this->topic.empty())
-            user.sendMessage(RPL_NOTOPIC + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :No topic is set");
+            user.sendErrorMessage(RPL_NOTOPIC, user, name + " :No topic is set");
         else
-            user.sendMessage(RPL_TOPIC + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :" + this->topic);
+            user.sendErrorMessage(RPL_TOPIC, user, name + " :" + this->topic);
         return;
     }
     if (!is_member(user)) {
-        user.sendMessage(ERR_NOTONCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     if (topic_restricted && !is_operator(user)) {
-        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
     this->topic = topic;
@@ -117,12 +117,12 @@ bool Channel::is_operator(User& user)
 void Channel::kickUser(User& user, std::string& target, std::string& reason)
 {
     if (!is_member(user)) {
-        user.sendMessage(ERR_NOTONCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
 
     if (!is_operator(user)) {
-        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
 
@@ -132,7 +132,7 @@ void Channel::kickUser(User& user, std::string& target, std::string& reason)
             break;
     }
     if (it == members.end()) {
-        user.sendMessage(ERR_USERNOTINCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + target + " " + name + " :They aren't on that channel");
+        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user,   target + " " + name + " :They aren't on that channel");
         throw std::invalid_argument("The target user is not in the channel");
     }
     User& target_user = it->second;
@@ -151,11 +151,11 @@ bool Channel::is_member(User& user)
 
 void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& Users)  {
     if (!is_member(user)) {
-        user.sendMessage(ERR_NOTONCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     if (!is_operator(user)) {
-        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
     std::map<int, User>::iterator it;
@@ -164,21 +164,21 @@ void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& U
             break;
     }
     if (it == Users.end()) {
-        user.sendMessage(ERR_NOSUCHNICK + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :No such nick/channel");
+        user.sendErrorMessage(ERR_NOSUCHNICK, user, name + " :No such nick/channel");
         throw std::invalid_argument("The invited user does not exist");
     }
     User& target_user = it->second;
     if (is_member(target_user)) {
-        user.sendMessage(ERR_USERONCHANNEL + " " + target_user.getNickname().empty() ? "*" : target_user.getNickname() + " " + name + " :is already on channel");
+        user.sendErrorMessage(ERR_USERONCHANNEL, user, (target_user.getNickname().empty() ? "*" : target_user.getNickname()) + " " + name + " :is already on channel");
         throw std::invalid_argument("The invited user is already on the the channel");
     }
     invited.insert(std::make_pair(target_user.getSocketFd(), target_user));
-    target_user.sendMessage(RPL_INVITING + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + target + " " + name + " :Invitation successful");
+    target_user.sendErrorMessage(RPL_INVITING, user,   target + " " + name + " :Invitation successful");
 }
 
 void Channel::printMode(User& user) {
     if (!is_member(user)) {
-        user.sendMessage(ERR_NOTONCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     std::string modes = "+";
@@ -195,21 +195,21 @@ void Channel::printMode(User& user) {
         modes += "l";
         params += " " + Utils::toString(user_limit);
     }
-    user.sendMessage(RPL_CHANNELMODEIS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " " + modes + " " + params);
+    user.sendErrorMessage(RPL_CHANNELMODEIS, user, name + " " + modes + " " + params);
 }
 
 void Channel::changeMode(User& user, std::vector<std::string> params) 
 {
     if (!is_member(user)) {
-        user.sendMessage(ERR_NOTONCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     if (!is_operator(user)) {
-        user.sendMessage(ERR_CHANOPRIVSNEEDED + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
     if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
-        user.sendMessage(ERR_UNKNOWNMODE + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :Is unknown mode char");
+        user.sendErrorMessage(ERR_UNKNOWNMODE, user, name + " :Is unknown mode char");
         throw std::invalid_argument("Channel mode flag(s) incorrect");
     }
     bool enable = params[0][0] == '+';
@@ -225,13 +225,13 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 topic_restricted = enable;
                 break;
             case 'k':
-                if (param_index >= params.size()) {
-                    user.sendMessage(ERR_NEEDMOREPARAMS +  " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " MODE :Not enough parameter");
-                    throw std::invalid_argument("Missing the new channel password");
-                }
                 if (enable) {
+                    if (param_index >= params.size()) {
+                        user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                        throw std::invalid_argument("Missing the new channel password");
+                    }
                     if (is_protected && !password.empty()) {
-                        user.sendMessage(ERR_KEYSET +  " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " :Channel key already set");
+                        user.sendErrorMessage(ERR_KEYSET, user, " :Channel key already set");
                         throw std::invalid_argument("Channel password already set");
                     }
                     password = params[param_index++];
@@ -242,7 +242,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 break;
             case 'o': {
                 if (param_index >= params.size()) {
-                    user.sendMessage(ERR_NEEDMOREPARAMS +  " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " MODE :Not enough parameter");
+                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
                     throw std::invalid_argument("Missing the channel operator parameter");
                 }
                 std::map<int, User>::iterator it = members.end();
@@ -251,7 +251,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                         it = it_tmp;
                 }
                 if (it == members.end()){
-                    user.sendMessage(ERR_USERNOTINCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + params[param_index] + " " + name + " :They aren't on that channel");
+                    user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, params[param_index] + " " + name + " :They aren't on that channel");
                     throw std::invalid_argument("The target user is not in the channel");
                 }
                 if (is_operator(it->second)){
@@ -266,7 +266,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 break;
             }
             default:
-                user.sendMessage(ERR_UNKNOWNMODE + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + name + " :Is unknown mode char");
+                user.sendErrorMessage(ERR_UNKNOWNMODE, user, name + " :Is unknown mode char");
                 throw std::invalid_argument("Channel mode flag(s) incorrect");
         }
     }

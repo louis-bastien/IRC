@@ -41,6 +41,7 @@ class User
         bool isRegistered() const;
         void doRegister();
         void sendMessage(const std::string message, bool serverPrefix = true);
+        void sendErrorMessage(int errorCode, User& user, std::string message);
         void changeMode(std::vector<std::string> params);
         void authenticate();
         int getSocketFd();
