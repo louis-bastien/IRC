@@ -40,7 +40,7 @@ class User
         bool isAuthenticated() const;
         bool isRegistered() const;
         void doRegister();
-        void sendMessage(const std::string& message, bool serverPrefix = true);
+        void sendMessage(const std::string message, bool serverPrefix = true);
         void changeMode(std::vector<std::string> params);
         void authenticate();
         int getSocketFd();

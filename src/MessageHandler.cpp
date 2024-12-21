@@ -53,7 +53,7 @@ void MessageHandler::handleNICK(User& user, const Message& message, Server& serv
     std::map<int, User>::iterator it = server.getUserMap().begin();
     while (it != server.getUserMap().end()) {
         if (it->second.getNickname() == nickname) {
-            user.sendMessage(ERR_NICKNAMEINUSE + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + nickname + " :Nickname is already in use");
+            user.sendMessage(Utils::toString(ERR_NICKNAMEINUSE) + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + nickname + " :Nickname is already in use");
             throw std::invalid_argument("Nickname already exists: " + nickname);
         }
         it++;
@@ -67,12 +67,14 @@ void MessageHandler::handleUSER(User& user, const Message& message, Server& serv
     std::string hostname = message.getParams()[1];
     user.setUsername(username);
     user.setHostname(hostname);
+    (void)server;
 }
 
 
 void MessageHandler::handlePING(User& user, const Message& message, Server& server) {
     validatePING(user, message);
     user.sendMessage("PONG " + message.getParams()[0]);
+    (void)server;
 }
 
 void MessageHandler::handleJOIN(User& user, const Message& message, Server& server) {
@@ -134,28 +136,16 @@ void MessageHandler::handlePART(User& user, const Message& message, Server& serv
     }
 }
 
-void MessageHandler::handleKICK(User& user, const Message& message, Server& server) {
-    validateKICK(user, message);
-    std::string channelName = message.getParams()[0];
-    std::string targetName = message.getParams()[1];
-    std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getTrailing();
-    std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
-    if (it == server.getChannelMap().end()) {
-        user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
-        throw std::invalid_argument("Channel does not exists");
-    }
-    it->second.kickUser(user, targetName, reason);
-}
-
 void MessageHandler::handleTOPIC(User& user, const Message& message, Server& server) {
     validateTOPIC(user, message);
     std::string channelName = message.getParams()[0];
     std::string topicName = message.getParams().size() == 2 ? message.getParams()[1] : std::string();
 
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
-    if (it == server.getChannelMap().end())
+    if (it == server.getChannelMap().end()) {
         user.sendMessage(ERR_NOSUCHCHANNEL + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + channelName + " :No such channel");
         throw std::invalid_argument("Channel does not exists");
+    }
     it->second.setTopic(user, topicName);
 }
 
@@ -207,7 +197,7 @@ void MessageHandler::handleKICK(User& user, const Message& message, Server& serv
 void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& server) {
     validatePRIVMSG(user, message);
     std::vector<std::string> params = Utils::split(message.getParams()[0], ',');
-    for (int i = 0; i < params.size(); i++) {
+    for (size_t i = 0; i < params.size(); i++) {
         std::string currentParam = params[i];
         if (currentParam[0] == '#' || currentParam[0] == '&') {
             std::map<std::string, Channel>::iterator it = server.getChannelMap().find(currentParam);
@@ -254,7 +244,7 @@ void MessageHandler::validateNICK(User& user, const Message& message) {
 }
 
 void MessageHandler::validateUSER(User& user, const Message& message) {
-    if (message.getParams().size() == 3 && !message.getTrailing().empty())
+    if (message.getParams().size() >= 3)
         return;
     user.sendMessage(ERR_NEEDMOREPARAMS + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " " + message.getCommand() +  " :Not enough parameter");
     throw std::invalid_argument("Wrong command format");

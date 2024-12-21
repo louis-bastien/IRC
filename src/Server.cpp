@@ -179,17 +179,19 @@ void Server::handleMessage(int clientFd, std::string& rawMessage) {
             throw::std::runtime_error("Could not find client fd=" + clientFd);
     User& user = it->second;
     if (rawMessage.size() > 512) {
-        user.sendMessage(ERR_INPUTTOOLONG + " " + user.getNickname().empty() ? "*" : user.getNickname() + " :Input line was too long");
+        user.sendMessage(ERR_INPUTTOOLONG + " " + (user.getNickname().empty() ? "*" : user.getNickname()) + " :Input line was too long");
         _logger.log(WARNING, "Message too long: " + rawMessage);
         return;
     }
     try {
+    _logger.log(DEBUG, "Prehandle: username=" + user.getUsername() + " nickname=" + user.getNickname() + " hostname=" + user.getHostname());
         Message msg(rawMessage);
         msg.logMsg(_logger);
         MessageHandler::validateAndDispatch(user, msg, *this);
         if (!user.isRegistered())
             user.doRegister();
         _logger.log(DEBUG, "Command handled without error");
+        _logger.log(DEBUG, "Posthandle: username=" + user.getUsername() + " nickname=" + user.getNickname() + " hostname=" + user.getHostname());
     }
     catch (std::exception &e) { 
         _logger.log(WARNING, "Error processing message: " + Utils::toString(e.what()));
