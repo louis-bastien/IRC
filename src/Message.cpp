@@ -39,7 +39,7 @@ void Message::extractParamsAndTrailing(std::istringstream& ss) {
     while (ss >> token) {
         if (token[0] == ':') {
             std::getline(ss, _trailing);
-            _trailing = _trailing.substr(1);
+            _trailing = token.substr(1) + _trailing;
             break;
         }
         _params.push_back(token);

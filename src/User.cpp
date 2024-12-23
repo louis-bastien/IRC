@@ -40,7 +40,7 @@ void User::setNickname(const std::string& nickname)
     }
     if (!(isalpha(nickname[0]) || nickname[0] == '-' || nickname[0] == '[' || nickname[0] == ']' ||
         nickname[0] == '\\' || nickname[0] == '^' || nickname[0] == '_')) {
-        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + nickname + " :Erroneous nickname");
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, nickname + " :Erroneous nickname");
         throw std::invalid_argument("Invalid nickname first character: " + nickname);
     }
     for (std::string::size_type i = 0; i < nickname.length(); ++i) 
@@ -48,7 +48,7 @@ void User::setNickname(const std::string& nickname)
         char c = nickname[i];
         if (!(isalnum(c) || c == '-' || c == '[' || c == ']' ||
         c == '\\' || c == '^' || c == '_')) {
-            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + nickname + " :Erroneous nickname");
+            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, nickname + " :Erroneous nickname");
             throw std::invalid_argument("Invalid character in nickname: " + nickname);
         }
     }
@@ -72,18 +72,18 @@ void User::setUsername(const std::string& username)
         throw std::invalid_argument("User is not yet authenticated");
     }
     if (username.empty()) {
-        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + username + " :Erroneous username");
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, username + " :Erroneous username");
         throw std::invalid_argument("Attempted to set an empty username.");
     }
     if (!isalpha(username[0]) && username[0] != '-'){
-        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + username + " :Erroneous username");
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, username + " :Erroneous username");
         throw std::invalid_argument("Attempted to set invalid username.");
     }
     for (std::string::size_type i = 0; i < username.length(); ++i)
     {
         char c = username[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
-            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + username + " :Erroneous username");
+            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, username + " :Erroneous username");
             throw std::invalid_argument("Attempted to set invalid username.");
         }
     }
@@ -107,18 +107,18 @@ void User::setHostname(const std::string& hostname)
         throw std::invalid_argument("User is not yet authenticated");
     }
     if (hostname.empty()) {
-        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + hostname + " :Erroneous hostname");
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, hostname + " :Erroneous hostname");
         throw std::invalid_argument("Attempted to set an empty hostname.");
     }
     if (!isalpha(hostname[0]) && hostname[0] != '-') {
-        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + hostname + " :Erroneous hostname");
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, hostname + " :Erroneous hostname");
         throw std::invalid_argument("Attempted to set invalid hostname.");
     }
     for (std::string::size_type i = 0; i < hostname.length(); ++i)
     {
         char c = hostname[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
-            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, " " + hostname + " :Erroneous hostname");
+            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, hostname + " :Erroneous hostname");
             throw std::invalid_argument("Attempted to set invalid hostname.");
         }
     }
@@ -175,7 +175,7 @@ void User::sendErrorMessage(int errorCode, User& user, std::string message)
     std::string formattedMessage;
 
     std::string userNickname = user.getNickname().empty() ? "*" : user.getNickname();
-    formattedMessage = Utils::toString(errorCode) + " " + userNickname + " :" + message + "\r\n";
+    formattedMessage = Utils::toString(errorCode) + " " + userNickname + " " + message + "\r\n";
 
     if (send(user.getSocketFd(), formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
         logger.log(ERROR, "Failed to send message: " + message);

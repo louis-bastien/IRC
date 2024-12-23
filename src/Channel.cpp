@@ -27,7 +27,7 @@ Channel::~Channel()
 void Channel::addUser(User& user, std::string password) 
 {
     if (members.find(user.getSocketFd()) != members.end()) {
-            user.sendErrorMessage(ERR_USERONCHANNEL, user,  user.getUsername() + " " + name + " :is already on channel");
+            user.sendErrorMessage(ERR_USERONCHANNEL, user,  user.getUsername() + " " + name + " :Is already on channel");
             throw std::invalid_argument("User already in the channel");
     }
     if (is_protected) {
@@ -60,7 +60,7 @@ void Channel::addUser(User& user, std::string password)
 
 void Channel::partUser(User& user, std::string reason = "") 
 {
-    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + name + " :" + reason);
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + name + ":" + reason);
     members.erase(user.getSocketFd());
     operators.erase(user.getSocketFd());
     logger.log(INFO, "User " + user.getNickname() + " left channel " + name + (reason.empty() ? "" : " (Reason: " + reason + ")"));

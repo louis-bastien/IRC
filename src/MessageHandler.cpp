@@ -41,7 +41,7 @@ void MessageHandler::handlePASS(User& user, const Message& message, Server& serv
     validatePASS(user, message);
     std::string password = message.getParams()[0];
     if (password != server.getPassword()) {
-        user.sendErrorMessage(ERR_PASSWDMISMATCH, user, "Password incorrect");
+        user.sendErrorMessage(ERR_PASSWDMISMATCH, user, ":Password incorrect");
         throw std::invalid_argument("Incorrect password provided: " + password);
     }
     user.authenticate();
@@ -83,19 +83,32 @@ void MessageHandler::handleJOIN(User& user, const Message& message, Server& serv
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
     std::vector<std::string> keys = message.getParams().size() >= 2 ? Utils::split(message.getParams()[1], ',') : std::vector<std::string>() ;
     while(!channelNames.empty()) {
-        std::string currentChannel = channelNames.front();
+            server.getLogger().log(DEBUG, "FLAG0");
+        std::string currentChannel =
+         channelNames.front();
         std::map<std::string, Channel>::iterator it = channelMap.find(currentChannel);
         if (it == channelMap.end()) {
-            channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger())));
-            server.getLogger().log(INFO, "Channel created: #" + currentChannel);
-            continue;
+            server.getLogger().log(DEBUG, "FLAG1");
+            if (currentChannel.size() >= 2 && (currentChannel[0] == '#' || currentChannel[0] == '&')) {
+                channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger())));
+                server.getLogger().log(INFO, "Channel created: " + currentChannel);
+            }
+            else
+                user.sendErrorMessage(ERR_NOSUCHCHANNEL, user,   currentChannel + " :No such channel");
         }
-        if (it->second.isProtected()) {
-            it->second.addUser(user, keys.front());
-            keys.erase(keys.begin());
+        else {
+            server.getLogger().log(DEBUG, "FLAG2");
+            if (it->second.isProtected()) {
+                if (keys.empty()) {
+                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                    throw std::invalid_argument("Missing the new channel password");
+                }
+                it->second.addUser(user, keys.front());
+                keys.erase(keys.begin());
+            }
+            else 
+                it->second.addUser(user);
         }
-        else 
-            it->second.addUser(user);
         channelNames.erase(channelNames.begin());
     }
 }
@@ -176,7 +189,7 @@ void MessageHandler::handleMODE(User& user, const Message& message, Server& serv
             }
             it++;
         }
-        user.sendErrorMessage(ERR_NOSUCHNICK, user, nickname + "No such nick/channel");
+        user.sendErrorMessage(ERR_NOSUCHNICK, user, nickname + " :No such nick/channel");
         throw std::invalid_argument("The target user does not exist");
         it++;
     }
