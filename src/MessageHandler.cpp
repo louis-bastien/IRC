@@ -90,7 +90,7 @@ void MessageHandler::handleJOIN(User& user, const Message& message, Server& serv
         if (it == channelMap.end()) {
             server.getLogger().log(DEBUG, "FLAG1");
             if (currentChannel.size() >= 2 && (currentChannel[0] == '#' || currentChannel[0] == '&')) {
-                channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger())));
+                channelMap[currentChannel] = Channel(currentChannel, server.getLogger());
                 server.getLogger().log(INFO, "Channel created: " + currentChannel);
             }
             else
