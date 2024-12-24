@@ -165,8 +165,10 @@ void User::doRegister(Server& server)
 void User::sendMOTD(Server& server) {
     if (server.getMOTD().empty())
         sendErrorMessage(ERR_NOMOTD, *this, ":MOTD File is missing");
-    else
+    else {
         sendErrorMessage(RPL_MOTD, *this, ":" + server.getMOTD());
+        sendErrorMessage(RPL_ENDOFMOTD, *this, ":End of MOTD command");
+    }
 }
 
 void User::sendINFO(Server& server) {
