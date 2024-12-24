@@ -8,12 +8,11 @@
 #include <unistd.h>
 #include <cstring>
 #include "Channel.hpp"
+#include "Server.hpp"
 #include "Logger.hpp"
 
-
 class Channel;
-
-
+class Server;
 class User
 {
     private:
@@ -39,9 +38,11 @@ class User
         void setHostname(const std::string& hostname);
         bool isAuthenticated() const;
         bool isRegistered() const;
-        void doRegister();
+        void doRegister(Server& server);
         void sendMessage(const std::string message, bool serverPrefix = true);
         void sendErrorMessage(int errorCode, User& user, std::string message);
+        void sendMOTD(Server& server);
+        void sendINFO(Server& server);
         void changeMode(std::vector<std::string> params);
         void authenticate();
         int getSocketFd();

@@ -28,6 +28,7 @@ class Server {
         int _serverFd;
         int _epollFd;
         Logger& _logger;
+        std::string _motd;
         static int _pipeFd[2];
         std::map<int, User> _userMap;
         std::map<std::string, Channel> _channelMap;
@@ -43,6 +44,7 @@ class Server {
         ~Server();
 
         const std::string& getPassword(void) const;
+        const std::string& getMOTD(void) const;
         Logger& getLogger(void) const;
         std::map<int, User>& getUserMap(void);
         std::map<std::string, Channel>& getChannelMap(void);

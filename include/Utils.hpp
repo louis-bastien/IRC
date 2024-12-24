@@ -24,4 +24,9 @@ class Utils {
             }
             return result;
         }
+
+        static std::string padLeft(int value, char filler, size_t length) {
+            std::string str = Utils::toString(value);
+            return std::string(length - str.length(), filler) + str;
+        }
 };

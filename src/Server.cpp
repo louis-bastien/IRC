@@ -6,7 +6,7 @@
 //Satic pipe fds used for signal handling with Epoll. 
 int Server::_pipeFd[2] = {-1, -1};
 
-Server::Server(int port, std::string password, Logger& logger) : _port(port), _password(password), _logger(logger) {
+Server::Server(int port, std::string password, Logger& logger) : _port(port), _password(password), _logger(logger), _motd("Today is a good day!") {
     _logger.log(INFO, "starting server on port " + Utils::toString(_port) + " with password '" + _password + "'");
 }
 
@@ -188,7 +188,7 @@ void Server::handleMessage(int clientFd, std::string& rawMessage) {
         msg.logMsg(_logger);
         MessageHandler::validateAndDispatch(user, msg, *this);
         if (!user.isRegistered())
-            user.doRegister();
+            user.doRegister(*this);
         _logger.log(DEBUG, "Command handled without error");
     }
     catch (std::exception &e) { 
@@ -220,6 +220,10 @@ Logger& Server::getLogger(void) const {
 
 const std::string& Server::getPassword(void) const {
     return (_password);
+}
+
+const std::string& Server::getMOTD(void) const {
+    return (_motd);
 }
 
 std::map<int, User>& Server::getUserMap(void) {

@@ -1,5 +1,7 @@
 #pragma once
 
+//all codes : https://modern.ircdocs.horse/
+
 // General Errors
 #define ERR_NOORIGIN          409 // "409 :No origin specified"
 #define ERR_NEEDMOREPARAMS    461 // "461 <command> :Not enough parameters"
@@ -55,8 +57,14 @@
 #define RPL_YOURHOST          002 // "002 <nick> :Your host is <servername>, running version <ver>"
 #define RPL_CREATED           003 // "003 <nick> :This server was created <date>"
 #define RPL_MYINFO            004 // "004 <nick> <servername> <version> <usermodes> <chanmodes>"
+#define RPL_ISUPPORT          005 // "<nick> <1-13 tokens> :are supported by this server"
 
 #define RPL_UMODEIS           221 // "221 <nick> :<usermodes>"
+#define RPL_LUSERCLIENT       251 // "251 <nick> :There are <u> users and <i> invisible on <s> servers"
+#define RPL_LUSEROP           252 // "252 <nick> <ops> :operator(s) online"
+#define RPL_LUSERUNKNOWN      253 // "253 <nick> <connections> :unknown connection(s)"
+#define RPL_LUSERCHANNELS     254 // "254 <nick> <channels> :channels formed"
+
 #define RPL_TOPIC             332 // "332 <channel> :<topic>"
 #define RPL_NOTOPIC           331 // "331 <channel> :No topic is set"
 
@@ -82,6 +90,7 @@
 
 // Quit/Disconnect Errors
 #define ERR_NOORIGIN          409 // "409 :No origin specified"
+#define ERR_NOMOTD            422 // "422 <nick> :MOTD File is missing"
 
 // Input/Output Errors
 #define ERR_INPUTTOOLONG      417 // "417 :Input line was too long"

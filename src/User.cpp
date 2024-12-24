@@ -146,7 +146,8 @@ void User::authenticate()
     logger.log(INFO, "User authenticated successfully.");
 }
 
-void User::doRegister()
+
+void User::doRegister(Server& server)
 {
     if (!is_authenticated || username.empty() || nickname.empty() || hostname.empty())
         return;
@@ -154,8 +155,29 @@ void User::doRegister()
     sendErrorMessage(RPL_WELCOME, *this, ":Welcome to the our IRC server");
     sendErrorMessage(RPL_YOURHOST, *this, ":Your host is running version 1.0");
     sendErrorMessage(RPL_CREATED, *this, ":This server was created by Anna and Louis");
-    sendErrorMessage(RPL_MYINFO, *this, ":We are compatible and compliant with basic IRC commands");
+    sendErrorMessage(RPL_LUSERCHANNELS, *this, ":We are compatible and compliant with basic IRC commands");
+    sendErrorMessage(RPL_ISUPPORT, *this, ":CHANTYPES=# PREFIX=(ov)@+");
+    sendINFO(server);
+    sendMOTD(server);
     logger.log(INFO, "User " + nickname + " registered successfully.");
+}
+
+void User::sendMOTD(Server& server) {
+    if (server.getMOTD().empty())
+        sendErrorMessage(ERR_NOMOTD, *this, ":MOTD File is missing");
+    else
+        sendErrorMessage(RPL_MOTD, *this, ":" + server.getMOTD());
+}
+
+void User::sendINFO(Server& server) {
+
+    std::string userNumbers = Utils::toString(server.getUserMap().size());
+    std::string channelNumbers =Utils::toString(server.getChannelMap().size());
+
+    sendErrorMessage(RPL_LUSERCLIENT, *this, ":There are " + userNumbers + " clients on this server");
+    sendErrorMessage(RPL_LUSEROP, *this, ":Number of operators online unknown");
+    sendErrorMessage(RPL_LUSERUNKNOWN, *this, ":Number of unknownconnections unknown");
+    sendErrorMessage(ERR_NOMOTD, *this, channelNumbers + " :Channels formed");
 }
 
 void User::sendMessage(const std::string message, bool serverPrefix)
@@ -173,9 +195,10 @@ void User::sendMessage(const std::string message, bool serverPrefix)
 void User::sendErrorMessage(int errorCode, User& user, std::string message)
 {
     std::string formattedMessage;
+    std::string paddedErrorCode = Utils::padLeft(errorCode, '0', 3);
 
     std::string userNickname = user.getNickname().empty() ? "*" : user.getNickname();
-    formattedMessage = Utils::toString(errorCode) + " " + userNickname + " " + message + "\r\n";
+    formattedMessage = paddedErrorCode + " " + userNickname + " " + message + "\r\n";
 
     if (send(user.getSocketFd(), formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
         logger.log(ERROR, "Failed to send message: " + message);

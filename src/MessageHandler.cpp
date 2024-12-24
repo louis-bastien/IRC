@@ -17,6 +17,8 @@ void MessageHandler::initCmdHandlers() {
         MessageHandler::_cmdHandlers.insert(std::make_pair("TOPIC", &MessageHandler::handleTOPIC));
         MessageHandler::_cmdHandlers.insert(std::make_pair("MODE", &MessageHandler::handleMODE));
         MessageHandler::_cmdHandlers.insert(std::make_pair("PRIVMSG", &MessageHandler::handlePRIVMSG));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("MOTD", &MessageHandler::handleMOTD));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("INFO", &MessageHandler::handleINFO));
     }
 }
 
@@ -75,6 +77,16 @@ void MessageHandler::handlePING(User& user, const Message& message, Server& serv
     validatePING(user, message);
     user.sendMessage("PONG " + message.getParams()[0]);
     (void)server;
+}
+
+void MessageHandler::handleMOTD(User& user, const Message& message, Server& server) {
+    user.sendMOTD(server);
+    (void)message;
+}
+
+void MessageHandler::handleINFO(User& user, const Message& message, Server& server) {
+    user.sendINFO(server);
+    (void)message;
 }
 
 void MessageHandler::handleJOIN(User& user, const Message& message, Server& server) {
