@@ -179,7 +179,7 @@ void User::sendErrorMessage(int errorCode, User& user, std::string message)
 
     if (send(user.getSocketFd(), formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
         logger.log(ERROR, "Failed to send message: " + message);
-    logger.log(DEBUG, "Sent message '" + formattedMessage + "' to client fd: " + Utils::toString(socket_fd));
+    logger.log(DEBUG, "Sent message (fd=" + Utils::toString(socket_fd) + "): '" + formattedMessage);
 }
 
 void User::changeMode(std::vector<std::string> params) 

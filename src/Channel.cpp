@@ -18,10 +18,7 @@ Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), log
     logger.log(INFO, "Channel created: " + name);
 }
 
-Channel::~Channel() 
-{
-    logger.log(INFO, "Channel destroyed: " + name);
-}
+Channel::~Channel() {}
 
 //Also add channel to the user container "std::vector<std::string> channels;""
 void Channel::addUser(User& user, std::string password) 
@@ -60,7 +57,7 @@ void Channel::addUser(User& user, std::string password)
 
 void Channel::partUser(User& user, std::string reason = "") 
 {
-    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + name + ":" + reason);
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " " + name + " :" + reason);
     members.erase(user.getSocketFd());
     operators.erase(user.getSocketFd());
     logger.log(INFO, "User " + user.getNickname() + " left channel " + name + (reason.empty() ? "" : " (Reason: " + reason + ")"));
@@ -132,7 +129,7 @@ void Channel::kickUser(User& user, std::string& target, std::string& reason)
             break;
     }
     if (it == members.end()) {
-        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user,   target + " " + name + " :They aren't on that channel");
+        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, target + " " + name + " :They aren't on that channel");
         throw std::invalid_argument("The target user is not in the channel");
     }
     User& target_user = it->second;
@@ -173,7 +170,7 @@ void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& U
         throw std::invalid_argument("The invited user is already on the the channel");
     }
     invited.insert(std::make_pair(target_user.getSocketFd(), target_user));
-    target_user.sendErrorMessage(RPL_INVITING, user,   target + " " + name + " :Invitation successful");
+    target_user.sendErrorMessage(RPL_INVITING, user, target + " " + name + " :Invitation successful");
 }
 
 void Channel::printMode(User& user) {
