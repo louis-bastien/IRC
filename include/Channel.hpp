@@ -4,6 +4,7 @@
 #include "Server.hpp"
 #include "Logger.hpp"
 #include <algorithm> 
+#include "Utils.hpp"
 
 //kick (user_op, std::string(user_trget), std::string (reason = "Goodbye"))
 //(part) leave channel ->reason (remove user)

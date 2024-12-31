@@ -12,6 +12,13 @@ class Utils {
             return newString;
         }
 
+        static int stringToInt(const std::string& str) {
+            std::istringstream iss(str);
+            int result;
+            iss >> result;
+            return result;
+        }
+
         static std::vector<std::string> split(const std::string& input, char delimiter) {
             std::vector<std::string> result;
             std::string token;

@@ -237,6 +237,22 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                     password.clear();
                 is_protected = enable;
                 break;
+            case 'l':
+            if (enable) {
+                if (param_index >= params.size()) {
+                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                    throw std::invalid_argument("Missing the user limit parameter");
+                }
+                int limit = Utils::stringToInt(params[param_index++]);
+                if (limit <= 0) {
+                throw std::invalid_argument("User limit must be greater than zero");
+                }
+                user_limit = limit; 
+            } 
+            else {
+                user_limit = 0; 
+            }
+            break;
             case 'o': {
                 if (param_index >= params.size()) {
                     user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
