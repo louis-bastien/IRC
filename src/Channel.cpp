@@ -77,11 +77,11 @@ void Channel::setTopic(User& user, const std::string& topic)
         return;
     }
     if (!is_member(user)) {
-        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not in that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     if (topic_restricted && !is_operator(user)) {
-        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
     this->topic = topic;
@@ -118,12 +118,12 @@ bool Channel::is_operator(User& user)
 void Channel::kickUser(User& user, std::string& target, std::string& reason)
 {
     if (!is_member(user)) {
-        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not in that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
 
     if (!is_operator(user)) {
-        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
 
@@ -133,7 +133,7 @@ void Channel::kickUser(User& user, std::string& target, std::string& reason)
             break;
     }
     if (it == members.end()) {
-        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, target + " " + name + " :They aren't on that channel");
+        user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, target + " " + name + " :They aren't in that channel");
         throw std::invalid_argument("The target user is not in the channel");
     }
     User& target_user = it->second;
@@ -152,11 +152,11 @@ bool Channel::is_member(User& user)
 
 void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& Users)  {
     if (!is_member(user)) {
-        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not in that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     if (!is_operator(user)) {
-        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
     std::map<int, User>::iterator it;
@@ -170,8 +170,8 @@ void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& U
     }
     User& target_user = it->second;
     if (is_member(target_user)) {
-        user.sendErrorMessage(ERR_USERONCHANNEL, user, (target_user.getNickname().empty() ? "*" : target_user.getNickname()) + " " + name + " :is already on channel");
-        throw std::invalid_argument("The invited user is already on the the channel");
+        user.sendErrorMessage(ERR_USERONCHANNEL, user, (target_user.getNickname().empty() ? "*" : target_user.getNickname()) + " " + name + " :is already in channel");
+        throw std::invalid_argument("The invited user is already in the channel");
     }
     invited.insert(std::make_pair(target_user.getSocketFd(), target_user));
     target_user.sendErrorMessage(RPL_INVITING, user, target + " " + name + " :Invitation successful");
@@ -179,7 +179,7 @@ void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& U
 
 void Channel::printMode(User& user) {
     if (!is_member(user)) {
-        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not in that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     std::string modes = "+";
@@ -202,11 +202,11 @@ void Channel::printMode(User& user) {
 void Channel::changeMode(User& user, std::vector<std::string> params) 
 {
     if (!is_member(user)) {
-        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not in that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
     if (!is_operator(user)) {
-        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not channel operator");
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
     if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
@@ -228,7 +228,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
             case 'k':
                 if (enable) {
                     if (param_index >= params.size()) {
-                        user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                        user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameters");
                         throw std::invalid_argument("Missing the new channel password");
                     }
                     if (is_protected && !password.empty()) {
@@ -244,7 +244,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
             case 'l':
             if (enable) {
                 if (param_index >= params.size()) {
-                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameters");
                     throw std::invalid_argument("Missing the user limit parameter");
                 }
                 int limit = Utils::stringToInt(params[param_index++]);
@@ -259,7 +259,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
             break;
             case 'o': {
                 if (param_index >= params.size()) {
-                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameters");
                     throw std::invalid_argument("Missing the channel operator parameter");
                 }
                 std::map<int, User>::iterator it = members.end();
@@ -268,11 +268,11 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                         it = it_tmp;
                 }
                 if (it == members.end()){
-                    user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, params[param_index] + " " + name + " :They aren't on that channel");
+                    user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, params[param_index] + " " + name + " :They aren't in that channel");
                     throw std::invalid_argument("The target user is not in the channel");
                 }
                 if (is_operator(it->second)){
-                    logger.log(WARNING, "User " + params[param_index] + " is already an operator on channel " +  name);
+                    logger.log(WARNING, "User " + params[param_index] + " is already an operator of channel " +  name);
                     return;
                 }
                 if (enable)

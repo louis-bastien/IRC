@@ -107,7 +107,7 @@ void MessageHandler::handleJOIN(User& user, const Message& message, Server& serv
         else {
             if (it->second.isProtected()) {
                 if (keys.empty()) {
-                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameter");
+                    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, " MODE :Not enough parameters");
                     throw std::invalid_argument("Missing the new channel password");
                 }
                 it->second.addUser(user, keys.front());
@@ -126,7 +126,7 @@ void MessageHandler::handleINVITE(User& user, const Message& message, Server& se
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end()) {
         user.sendErrorMessage(ERR_NOSUCHCHANNEL, user, channelName + " :No such channel");
-        throw std::invalid_argument("Channel does not exists");
+        throw std::invalid_argument("Channel does not exist");
     }
     it->second.inviteUser(user, nickName, server.getUserMap());
 }
@@ -162,7 +162,7 @@ void MessageHandler::handleTOPIC(User& user, const Message& message, Server& ser
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end()) {
         user.sendErrorMessage(ERR_NOSUCHCHANNEL, user, channelName + " :No such channel");
-        throw std::invalid_argument("Channel does not exists");
+        throw std::invalid_argument("Channel does not exist");
     }
     it->second.setTopic(user, topicName);
 }
@@ -175,7 +175,7 @@ void MessageHandler::handleMODE(User& user, const Message& message, Server& serv
         std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
         if (it == server.getChannelMap().end()) {
             user.sendErrorMessage(ERR_NOSUCHCHANNEL, user, channelName + " :No such channel");
-            throw std::invalid_argument("Channel does not exists");
+            throw std::invalid_argument("Channel does not exist");
         }
         paramsVec.erase(paramsVec.begin());
         if (paramsVec.empty())
@@ -208,7 +208,7 @@ void MessageHandler::handleKICK(User& user, const Message& message, Server& serv
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end()) {
         user.sendErrorMessage(ERR_NOSUCHCHANNEL, user, channelName + " :No such channel");
-        throw std::invalid_argument("Channel does not exists");
+        throw std::invalid_argument("Channel does not exist");
     }
     it->second.kickUser(user, targetName, reason);
 }
@@ -251,21 +251,21 @@ void MessageHandler::validateCAP(const Message& message) {
 void MessageHandler::validatePASS(User& user, const Message& message) {
     if (message.getParams().size() == 1) 
         return;
-    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() +  " :Not enough parameter");
+    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() +  " :Not enough parameters");
     throw std::invalid_argument("Wrong command format");
 }
 
 void MessageHandler::validateNICK(User& user, const Message& message) {
      if (message.getParams().size() == 1) 
         return;
-    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() +  " :Not enough parameter");
+    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() +  " :Not enough parameters");
     throw std::invalid_argument("Wrong command format");
 }
 
 void MessageHandler::validateUSER(User& user, const Message& message) {
     if (message.getParams().size() >= 3)
         return;
-    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() +  " :Not enough parameter");
+    user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() +  " :Not enough parameters");
     throw std::invalid_argument("Wrong command format");
 }
 
@@ -279,7 +279,7 @@ void MessageHandler::validatePING(User& user, const Message& message) {
 void MessageHandler::validateJOIN(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
-        throw std::invalid_argument("User not registered.");
+        throw std::invalid_argument("User not registered");
     }
     if (message.getParams().size() == 0) {
         user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
@@ -290,7 +290,7 @@ void MessageHandler::validateJOIN(User& user, const Message& message) {
 void MessageHandler::validateINVITE(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
-        throw std::invalid_argument("User not registered.");
+        throw std::invalid_argument("User not registered");
     }
     if (message.getParams().size() < 2) {
         user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
@@ -301,7 +301,7 @@ void MessageHandler::validateINVITE(User& user, const Message& message) {
 void MessageHandler::validatePART(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
-        throw std::invalid_argument("User not registered.");
+        throw std::invalid_argument("User not registered");
     }
     if (message.getParams().size() == 0) {
         user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
@@ -312,7 +312,7 @@ void MessageHandler::validatePART(User& user, const Message& message) {
 void MessageHandler::validateKICK(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
-        throw std::invalid_argument("User not registered.");
+        throw std::invalid_argument("User not registered");
     }
     if (message.getParams().size() < 2) {
         user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
@@ -323,7 +323,7 @@ void MessageHandler::validateKICK(User& user, const Message& message) {
 void MessageHandler::validateTOPIC(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
-        throw std::invalid_argument("User not registered.");
+        throw std::invalid_argument("User not registered");
     }
     if (message.getParams().size() == 0) {
         user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
@@ -345,7 +345,7 @@ void MessageHandler::validateMODE(User& user, const Message& message) {
 void MessageHandler::validatePRIVMSG(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
-        throw std::invalid_argument("User not registered.");
+        throw std::invalid_argument("User not registered");
     }
     if (message.getParams().size() == 0) {
         user.sendErrorMessage(ERR_NORECIPIENT, user, message.getCommand() + " :No recipient given");

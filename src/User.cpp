@@ -73,18 +73,18 @@ void User::setUsername(const std::string& username)
     }
     if (username.empty()) {
         sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, username + " :Erroneous username");
-        throw std::invalid_argument("Attempted to set an empty username.");
+        throw std::invalid_argument("Attempted to set an empty username");
     }
     if (!isalpha(username[0]) && username[0] != '-'){
         sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, username + " :Erroneous username");
-        throw std::invalid_argument("Attempted to set invalid username.");
+        throw std::invalid_argument("Attempted to set invalid username");
     }
     for (std::string::size_type i = 0; i < username.length(); ++i)
     {
         char c = username[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
             sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, username + " :Erroneous username");
-            throw std::invalid_argument("Attempted to set invalid username.");
+            throw std::invalid_argument("Attempted to set invalid username");
         }
     }
     this->username = username;
@@ -100,7 +100,7 @@ void User::setHostname(const std::string& hostname)
 {
     if (this->is_registered) {
         sendErrorMessage(ERR_ALREADYREGISTERED, *this, " :You may not reregister");
-        throw std::invalid_argument("User is already registered can't change hostname.");
+        throw std::invalid_argument("User is already registered can't change hostname");
     }
     if (!this->is_authenticated) {
         sendErrorMessage(ERR_NOTREGISTERED, *this, " :You are not authenticated");
@@ -108,18 +108,18 @@ void User::setHostname(const std::string& hostname)
     }
     if (hostname.empty()) {
         sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, hostname + " :Erroneous hostname");
-        throw std::invalid_argument("Attempted to set an empty hostname.");
+        throw std::invalid_argument("Attempted to set an empty hostname");
     }
     if (!isalpha(hostname[0]) && hostname[0] != '-') {
         sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, hostname + " :Erroneous hostname");
-        throw std::invalid_argument("Attempted to set invalid hostname.");
+        throw std::invalid_argument("Attempted to set invalid hostname");
     }
     for (std::string::size_type i = 0; i < hostname.length(); ++i)
     {
         char c = hostname[i];
         if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
             sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, hostname + " :Erroneous hostname");
-            throw std::invalid_argument("Attempted to set invalid hostname.");
+            throw std::invalid_argument("Attempted to set invalid hostname");
         }
     }
     this->hostname = hostname;
@@ -139,11 +139,11 @@ bool User::isRegistered() const
 void User::authenticate()
 {
     if (this->is_registered) {
-        sendErrorMessage(ERR_ALREADYREGISTERED, *this, " :You are already reigstered");
-        throw std::invalid_argument("User is already registered.");
+        sendErrorMessage(ERR_ALREADYREGISTERED, *this, " :You are already registered");
+        throw std::invalid_argument("User is already registered");
     }
     this->is_authenticated = true;
-    logger.log(INFO, "User authenticated successfully.");
+    logger.log(INFO, "User authenticated successfully");
 }
 
 
@@ -152,7 +152,7 @@ void User::doRegister(Server& server)
     if (!is_authenticated || username.empty() || nickname.empty() || hostname.empty())
         return;
     this->is_registered = true;
-    sendErrorMessage(RPL_WELCOME, *this, ":Welcome to the our IRC server");
+    sendErrorMessage(RPL_WELCOME, *this, ":Welcome to our IRC server");
     sendErrorMessage(RPL_YOURHOST, *this, ":Your host is running version 1.0");
     sendErrorMessage(RPL_CREATED, *this, ":This server was created by Anna and Louis");
     sendErrorMessage(RPL_LUSERCHANNELS, *this, ":We are compatible and compliant with basic IRC commands");
@@ -178,7 +178,7 @@ void User::sendINFO(Server& server) {
 
     sendErrorMessage(RPL_LUSERCLIENT, *this, ":There are " + userNumbers + " clients on this server");
     sendErrorMessage(RPL_LUSEROP, *this, ":Number of operators online unknown");
-    sendErrorMessage(RPL_LUSERUNKNOWN, *this, ":Number of unknownconnections unknown");
+    sendErrorMessage(RPL_LUSERUNKNOWN, *this, ":Number of unknown connections unknown");
     sendErrorMessage(ERR_NOMOTD, *this, channelNumbers + " :Channels formed");
 }
 
