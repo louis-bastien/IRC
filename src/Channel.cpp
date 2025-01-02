@@ -27,6 +27,10 @@ void Channel::addUser(User& user, std::string password)
             user.sendErrorMessage(ERR_USERONCHANNEL, user,  user.getUsername() + " " + name + " :Is already on channel");
             throw std::invalid_argument("User already in the channel");
     }
+    if (user_limit && static_cast<std::size_t>(user_limit) == members.size()){
+            user.sendErrorMessage(ERR_CHANNELISFULL, user,  user.getUsername() + " " + name + " :Cannot join channel (+l)");
+            throw std::runtime_error("Channel is full");
+    }
     if (is_protected) {
         if (password.empty()) {
             user.sendErrorMessage(ERR_BADCHANNELKEY, user, name + " :Cannot join channel (+k)");
