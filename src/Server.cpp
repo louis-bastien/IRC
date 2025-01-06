@@ -176,7 +176,7 @@ void Server::handleReadEvent(int eventFd) {
 void Server::handleMessage(int clientFd, std::string& rawMessage) {
     std::map<int, User>::iterator it = _userMap.find(clientFd);
     if (it == _userMap.end())
-            throw::std::runtime_error("Could not find client fd=" + clientFd);
+            throw::std::runtime_error("Could not find client fd=" + Utils::toString(clientFd));
     User& user = it->second;
     if (rawMessage.size() > 512) {
         user.sendErrorMessage(ERR_INPUTTOOLONG, user, " :Input line was too long");

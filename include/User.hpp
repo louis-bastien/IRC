@@ -33,6 +33,7 @@ class User
         std::string getNickname() const;
         void setNickname(const std::string& nickname);
         std::string getUsername() const;
+        std::vector<std::string>& getChannels();
         void setUsername(const std::string& username);
         std::string getHostname() const;
         void setHostname(const std::string& hostname);

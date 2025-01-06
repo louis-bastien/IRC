@@ -47,22 +47,46 @@ void Channel::addUser(User& user, std::string password)
             throw std::invalid_argument("User tried to join channel without invitation");
         }
         members.insert(std::make_pair(user.getSocketFd(), user));
+        user.getChannels().push_back(name);
         invited.erase(user.getSocketFd());
         broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " JOIN " + name);
         return;
     }
     members.insert(std::make_pair(user.getSocketFd(), user));
+    user.getChannels().push_back(name);
     if (members.size() == 1) {
         operators.insert(std::make_pair(user.getSocketFd(), user));
         logger.log(INFO, user.getNickname() + " is the operator of the channel " + name);
     }
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " JOIN " + name);
+    user.sendErrorMessage(RPL_NAMREPLY, user, "=" + name + " :" + listUsers());
+    user.sendErrorMessage(RPL_ENDOFNAMES, user, name + " :End of /NAMES list");
+}
+
+std::string Channel::listUsers()
+{
+    std::string list;
+    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it)
+        list += it->second.getNickname()+ " ";
+    if (!list.empty())
+        list.erase(list.size() - 1);
+    return list;
 }
 
 void Channel::partUser(User& user, std::string reason = "") 
 {
+    if (members.find(user.getSocketFd()) == members.end()) {
+        user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
+        throw std::invalid_argument("The user is not part of the channel");
+    }
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " " + name + " :" + reason);
     members.erase(user.getSocketFd());
+    for(std::vector<std::string>::iterator it = user.getChannels().begin(); it != user.getChannels().end(); ++it) {
+        if (*it == name) {
+            it = user.getChannels().erase(it);
+            break;
+        }
+    }
     operators.erase(user.getSocketFd());
     logger.log(INFO, "User " + user.getNickname() + " left channel " + name + (reason.empty() ? "" : " (Reason: " + reason + ")"));
 }

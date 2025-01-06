@@ -43,4 +43,5 @@ class Channel
         void changeMode(User& user, std::vector<std::string>);
         bool isProtected(void);
         void broadcast(std::string msg, bool serverPrefix = true);
+        std::string listUsers();
 };

@@ -133,6 +133,10 @@ void MessageHandler::handleINVITE(User& user, const Message& message, Server& se
 
 void MessageHandler::handlePART(User& user, const Message& message, Server& server) {
     validatePART(user, message);
+    if (message.getParams().empty()) {
+        user.leaveAllChannels(server.getChannelMap());
+        return;
+    }
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
     std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getParams()[1];
     std::map<std::string, Channel>& channelMap = server.getChannelMap();
@@ -302,10 +306,6 @@ void MessageHandler::validatePART(User& user, const Message& message) {
     if (!user.isRegistered()) {
         user.sendErrorMessage(ERR_NOTREGISTERED, user, message.getCommand() + " :You have not registered");
         throw std::invalid_argument("User not registered");
-    }
-    if (message.getParams().size() == 0) {
-        user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
-        throw std::invalid_argument("Wrong command format");
     }
 }
 

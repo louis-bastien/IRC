@@ -61,6 +61,11 @@ std::string User::getUsername() const
     return (this->username);
 }
 
+std::vector<std::string>& User::getChannels()
+{
+    return (this->channels);
+}
+
 void User::setUsername(const std::string& username)
 {
     if (this->is_registered) {
@@ -232,7 +237,8 @@ void User::changeMode(std::vector<std::string> params)
 
 void User::leaveAllChannels(std::map<std::string, Channel>& allChannels) 
 {
-    for (std::vector<std::string>::iterator it = channels.begin(); it != channels.end(); ++it)
+    std::vector<std::string> channelsCopy = channels;
+    for (std::vector<std::string>::iterator it = channelsCopy.begin(); it != channelsCopy.end(); ++it)
     {
         std::string channelName = *it;
         std::map<std::string, Channel>::iterator channelIt = allChannels.find(channelName);
