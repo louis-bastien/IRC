@@ -42,6 +42,6 @@ class Channel
         void printMode(User& user);
         void changeMode(User& user, std::vector<std::string>);
         bool isProtected(void);
-        void broadcast(std::string msg, bool serverPrefix = true);
+        void broadcast(std::string msg, int excludedFd = -1, bool serverPrefix = true);
         std::string listUsers();
 };

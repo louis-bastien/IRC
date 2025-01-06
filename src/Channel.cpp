@@ -61,6 +61,7 @@ void Channel::addUser(User& user, std::string password)
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " JOIN " + name);
     user.sendErrorMessage(RPL_NAMREPLY, user, "=" + name + " :" + listUsers());
     user.sendErrorMessage(RPL_ENDOFNAMES, user, name + " :End of /NAMES list");
+    logger.log(DEBUG, "User joined channel: " + name + ", sending NAMES list: " + listUsers());
 }
 
 std::string Channel::listUsers()
@@ -314,9 +315,11 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " MODE " + name + " " + params[0]);
 }
 
-void Channel::broadcast(std::string msg, bool serverPrefix)
+void Channel::broadcast(std::string msg, int excludedFd, bool serverPrefix)
 {
     for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it) {
+        if (it->first == excludedFd)
+            continue;
         if (serverPrefix)
             it->second.sendMessage(msg);
         else

@@ -229,7 +229,7 @@ void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& s
                 server.getLogger().log(WARNING, "Channel " + currentParam + " does not exist");
                 continue;
             }
-            it->second.broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing(), false);
+            it->second.broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing(), user.getSocketFd(), false);
         }
         else {
             std::map<int, User>::iterator it;
