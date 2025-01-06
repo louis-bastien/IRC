@@ -229,7 +229,7 @@ void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& s
                 server.getLogger().log(WARNING, "Channel " + currentParam + " does not exist");
                 continue;
             }
-            it->second.broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing());
+            it->second.broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing(), false);
         }
         else {
             std::map<int, User>::iterator it;
@@ -241,7 +241,7 @@ void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& s
                 user.sendErrorMessage(ERR_NOSUCHNICK, user, currentParam + " :No such nick/channel");
                 server.getLogger().log(WARNING, "User " + currentParam + " does not exist");
             }
-            it->second.sendMessage(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG :" + message.getTrailing());
+            it->second.sendMessage(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG :" + message.getTrailing(), false);
         }
     }
 }

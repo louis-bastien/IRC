@@ -205,7 +205,7 @@ void User::sendErrorMessage(int errorCode, User& user, std::string message)
     std::string paddedErrorCode = Utils::padLeft(errorCode, '0', 3);
 
     std::string userNickname = user.getNickname().empty() ? "*" : user.getNickname();
-    formattedMessage = paddedErrorCode + " " + userNickname + " " + message + "\r\n";
+    formattedMessage = ":ircserv " + paddedErrorCode + " " + userNickname + " " + message + "\r\n";
 
     if (send(user.getSocketFd(), formattedMessage.c_str(), formattedMessage.length(), 0) == -1) 
         logger.log(ERROR, "Failed to send message: " + message);
