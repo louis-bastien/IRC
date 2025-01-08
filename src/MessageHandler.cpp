@@ -101,8 +101,10 @@ void MessageHandler::handleJOIN(User& user, const Message& message, Server& serv
         if (it == channelMap.end()) {
             if (currentChannel.size() >= 2 && (currentChannel[0] == '#' || currentChannel[0] == '&'))
                 it = channelMap.insert(std::make_pair(currentChannel, Channel(currentChannel, server.getLogger()))).first;
-            else
+            else {
                 user.sendErrorMessage(ERR_NOSUCHCHANNEL, user, currentChannel + " :No such channel");
+                throw std::invalid_argument("No such channel");
+            }
         }
         else {
             if (it->second.isProtected()) {
