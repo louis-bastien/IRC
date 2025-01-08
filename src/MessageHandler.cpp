@@ -19,6 +19,7 @@ void MessageHandler::initCmdHandlers() {
         MessageHandler::_cmdHandlers.insert(std::make_pair("PRIVMSG", &MessageHandler::handlePRIVMSG));
         MessageHandler::_cmdHandlers.insert(std::make_pair("MOTD", &MessageHandler::handleMOTD));
         MessageHandler::_cmdHandlers.insert(std::make_pair("INFO", &MessageHandler::handleINFO));
+        MessageHandler::_cmdHandlers.insert(std::make_pair("WHO", &MessageHandler::handleWHO));
     }
 }
 
