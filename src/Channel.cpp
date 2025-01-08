@@ -281,6 +281,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 throw std::invalid_argument("User limit must be greater than zero");
                 }
                 user_limit = limit; 
+                break;
             } 
             else {
                 user_limit = 0; 
