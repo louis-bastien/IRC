@@ -306,9 +306,9 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                     return;
                 }
                 if (enable)
-                    operators.insert(std::make_pair(user.getSocketFd(), user));
+                    operators.insert(std::make_pair(it->second.getSocketFd(), it->second));
                 else
-                    operators.erase(operators.find(user.getSocketFd()));
+                    operators.erase(operators.find(it->second.getSocketFd()));
                 param_index++;
                 break;
             }
