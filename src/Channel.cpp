@@ -301,12 +301,13 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                     user.sendErrorMessage(ERR_USERNOTINCHANNEL, user, params[param_index] + " " + name + " :They aren't in that channel");
                     throw std::invalid_argument("The target user is not in the channel");
                 }
-                if (is_operator(it->second)){
-                    logger.log(WARNING, "User " + params[param_index] + " is already an operator of channel " +  name);
-                    return;
-                }
-                if (enable)
+                if (enable){
+                    if (is_operator(it->second)){
+                        logger.log(WARNING, "User " + params[param_index] + " is already an operator of channel " +  name);
+                        return;
+                    }
                     operators.insert(std::make_pair(it->second.getSocketFd(), it->second));
+                }
                 else
                     operators.erase(operators.find(it->second.getSocketFd()));
                 param_index++;
