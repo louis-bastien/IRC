@@ -76,6 +76,8 @@
 #define RPL_LISTEND           323 // "323 :End of /LIST"
 #define RPL_CHANNELMODEIS     324 // "324 <nick> <channel> <chanmodes>"
 
+
+#define RPL_ENDOFBANLIST      368 // "368 <user> <channel> :End of Channel Ban List"
 #define RPL_WHOREPLY          352 // "352 <channel> <user> <host> <server> <nick> <flags> :<hopcount> <realname>"
 #define RPL_ENDOFWHO          315 // "315 <channel> :End of /WHO list"
 

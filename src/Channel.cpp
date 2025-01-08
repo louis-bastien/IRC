@@ -234,6 +234,10 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
         user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
         throw std::invalid_argument("The user is not a channel operator");
     }
+    if (params[0].length() == 1 && params[0][0] == 'b'){
+        user.sendErrorMessage(RPL_ENDOFBANLIST, user, name + " :End of Channel Ban List");
+        return;
+    }
     if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
         user.sendErrorMessage(ERR_UNKNOWNMODE, user, name + " :Is unknown mode char");
         throw std::invalid_argument("Channel mode flag(s) incorrect");
@@ -312,7 +316,7 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 throw std::invalid_argument("Channel mode flag(s) incorrect");
         }
     }
-    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " MODE " + name + " " + params[0]);
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " MODE " + name + " " + params[0], false);
 }
 
 void Channel::broadcast(std::string msg, int excludedFd, bool serverPrefix)
