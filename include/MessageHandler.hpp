@@ -28,6 +28,7 @@ class MessageHandler {
         static void handlePRIVMSG(User& user, const Message& message, Server& server);
         static void handleINFO(User& user, const Message& message, Server& server);
         static void handleMOTD(User& user, const Message& message, Server& server);
+        static void handleWHO(User& user, const Message& message, Server& server);
 
         static void validateCAP(const Message& message);
         static void validatePASS(User& user, const Message& message);

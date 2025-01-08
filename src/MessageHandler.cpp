@@ -67,8 +67,10 @@ void MessageHandler::handleUSER(User& user, const Message& message, Server& serv
     validateUSER(user, message);
     std::string username = message.getParams()[0];
     std::string hostname = message.getParams()[1];
+    std::string realname = message.getParams()[2];
     user.setUsername(username);
     user.setHostname(hostname);
+    user.setRealname(realname);
     (void)server;
 }
 
@@ -363,6 +365,30 @@ void MessageHandler::validatePRIVMSG(User& user, const Message& message) {
         user.sendErrorMessage(ERR_NOTEXTTOSEND, user, message.getCommand() + " :No text to send");
         throw std::invalid_argument("Wrong command format");
     }
+}
+
+void MessageHandler::handleWHO(User& user, const Message& message, Server& server) {
+    if (message.getParams().empty()) {
+        user.sendErrorMessage(ERR_NEEDMOREPARAMS, user, message.getCommand() + " :Not enough parameters");
+        throw std::invalid_argument("Missing the channel parameter");
+    }
+
+    std::string channelName = message.getParams()[0];
+    std::map<std::string, Channel>& channels = server.getChannelMap();
+    std::map<std::string, Channel>::iterator channelIt = channels.find(channelName);
+    
+    if (channelIt == channels.end()) {
+        user.sendErrorMessage(ERR_NOSUCHCHANNEL, user, channelName + " :No such channel");
+        throw std::invalid_argument("Channel does not exist");
+    }
+
+    Channel& channel = channelIt->second;
+    std::map<int, User>& members = channel.getMembers();
+    for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it) {
+        User& member = it->second;
+        user.sendErrorMessage(RPL_WHOREPLY, user, channelName + " " + member.getUsername() + " " + member.getHostname() + " " + "ircserv " + member.getNickname() + " " +"H :0 " + member.getNickname());
+    }
+    user.sendErrorMessage(RPL_ENDOFWHO, user, channelName + " :End of /WHO list" );
 }
 
 /*

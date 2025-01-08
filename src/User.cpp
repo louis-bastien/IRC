@@ -17,6 +17,7 @@ User& User::operator=(const User& other)
     {
         username = other.username;
         nickname = other.nickname;
+        realname = other.realname;
         socket_fd = other.socket_fd;
         is_authenticated = other.is_authenticated;
         channels = other.channels;
@@ -101,6 +102,11 @@ std::string User::getHostname() const
     return (this->hostname);
 }
 
+std::string User::getRealname() const
+{
+    return (this->realname);
+}
+
 void User::setHostname(const std::string& hostname)
 {
     if (this->is_registered) {
@@ -129,6 +135,36 @@ void User::setHostname(const std::string& hostname)
     }
     this->hostname = hostname;
     logger.log(INFO, "Hostname set to " + hostname);
+}
+
+void User::setRealname(const std::string& realname)
+{
+    if (this->is_registered) {
+        sendErrorMessage(ERR_ALREADYREGISTERED, *this, " :You may not reregister");
+        throw std::invalid_argument("User is already registered can't change realname");
+    }
+    if (!this->is_authenticated) {
+        sendErrorMessage(ERR_NOTREGISTERED, *this, " :You are not authenticated");
+        throw std::invalid_argument("User is not yet authenticated");
+    }
+    if (realname.empty()) {
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, realname + " :Erroneous realname");
+        throw std::invalid_argument("Attempted to set an empty realname");
+    }
+    if (!isalpha(realname[0]) && realname[0] != '-') {
+        sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, realname + " :Erroneous realname");
+        throw std::invalid_argument("Attempted to set invalid realname");
+    }
+    for (std::string::size_type i = 0; i < realname.length(); ++i)
+    {
+        char c = realname[i];
+        if (!isalnum(c) && c != '-' && c != '_' && c != '.') {
+            sendErrorMessage(ERR_ERRONEUSNICKNAME, *this, realname + " :Erroneous realname");
+            throw std::invalid_argument("Attempted to set invalid realname");
+        }
+    }
+    this->realname = realname;
+    logger.log(INFO, "realname set to " + realname);
 }
 
 bool User::isAuthenticated() const
