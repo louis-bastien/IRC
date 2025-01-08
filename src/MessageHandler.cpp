@@ -114,6 +114,8 @@ void MessageHandler::handleJOIN(User& user, const Message& message, Server& serv
                 }
                 it->second.addUser(user, keys.front());
                 keys.erase(keys.begin());
+                channelNames.erase(channelNames.begin());
+                continue;
             }
         }
         it->second.addUser(user);
