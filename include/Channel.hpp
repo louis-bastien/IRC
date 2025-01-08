@@ -34,7 +34,7 @@ class Channel
         void setTopic(User& user, const std::string& topic);
         std::string getName() const;
         std::string getTopic() const;
-        std::map<int, User> getMembers() const;
+        std::map<int, User>& getMembers();
         bool is_operator(User& user); // create a function that will handle cases if is not operator
         bool is_member(User& user);
         void kickUser(User& user, std::string& target, std::string& reason); // is operator tries to kick then error

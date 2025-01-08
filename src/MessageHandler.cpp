@@ -233,6 +233,10 @@ void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& s
                 server.getLogger().log(WARNING, "Channel " + currentParam + " does not exist");
                 continue;
             }
+            if (it->second.getMembers().find(user.getSocketFd()) == it->second.getMembers().end()) {
+                user.sendErrorMessage(ERR_CANNOTSENDTOCHAN, user, it->first + " :Cannot send to channel");
+                throw std::invalid_argument("The user is not part of the channel");
+            }
             it->second.broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing(), user.getSocketFd(), false);
         }
         else {

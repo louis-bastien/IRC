@@ -123,7 +123,7 @@ std::string Channel::getTopic() const
     return (this->topic);
 }
 
-std::map<int, User> Channel::getMembers() const
+std::map<int, User>& Channel::getMembers()
 {
     return (members);
 }
