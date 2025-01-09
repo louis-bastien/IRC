@@ -250,7 +250,7 @@ void MessageHandler::handlePRIVMSG(User& user, const Message& message, Server& s
             }
             if (it == server.getUserMap().end()) {
                 user.sendErrorMessage(ERR_NOSUCHNICK, user, currentParam + " :No such nick/channel");
-                throw std::invalid_argument("User " + currentParam + " does not exist");
+                continue ;
             }
             it->second.sendMessage(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PRIVMSG " + currentParam + " :" + message.getTrailing(), false);
         }

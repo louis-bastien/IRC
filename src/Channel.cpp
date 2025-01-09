@@ -84,7 +84,7 @@ void Channel::partUser(User& user, std::string reason = "")
         user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
         throw std::invalid_argument("The user is not part of the channel " + name);
     }
-    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " " + name + " :" + reason);
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " PART " + name + " :" + reason);
     members.erase(user.getSocketFd());
     for(std::vector<std::string>::iterator it = user.getChannels().begin(); it != user.getChannels().end(); ++it) {
         if (*it == name) {
