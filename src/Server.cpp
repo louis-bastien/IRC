@@ -163,11 +163,15 @@ void Server::acceptConnection(void) {
 
 void Server::handleReadEvent(int eventFd) {
     char buffer[BUFFER_SIZE];
-    std::string rawMessage;
+    std::string& rawMessage = clientBuffers[eventFd];
 
     while (true) {
         int bytes_read = read(eventFd, buffer, sizeof(buffer));
         if (bytes_read < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                _logger.log(DEBUG, "Non-blocking read: no data available yet");
+                return;
+            }
             closeClient(eventFd);
             _logger.log(ERROR, "Failed to read from client");
             return;
@@ -186,6 +190,7 @@ void Server::handleReadEvent(int eventFd) {
         }
     }
     handleMessage(eventFd, rawMessage);
+    rawMessage.clear();
 }
 
 void Server::handleMessage(int clientFd, std::string& rawMessage) {
