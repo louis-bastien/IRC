@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <map>
 #include <csignal>
+#include <fcntl.h>
 
 #include <Logger.hpp>
 #include <User.hpp>
@@ -32,6 +33,7 @@ class Server {
         static int _pipeFd[2];
         std::map<int, User> _userMap;
         std::map<std::string, Channel> _channelMap;
+        std::map<int, std::string> clientBuffers; 
 
         void epollInit(void);
         void acceptConnection(void);

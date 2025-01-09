@@ -6,6 +6,18 @@
 //Satic pipe fds used for signal handling with Epoll. 
 int Server::_pipeFd[2] = {-1, -1};
 
+void    setNonBlocking(int fd)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        throw std::runtime_error("Failed to get file descriptor flags");
+    }
+
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        throw std::runtime_error("Failed to set file descriptor to non-blocking");
+    }
+}
+
 Server::Server(int port, std::string password, Logger& logger) : _port(port), _password(password), _logger(logger), _motd("Today is a good day!") {
     _logger.log(INFO, "starting server on port " + Utils::toString(_port) + " with password '" + _password + "'");
 }
@@ -43,6 +55,7 @@ void Server::init() {
         _logger.log(ERROR, "Failed to create server socket");
         throw std::runtime_error("Failed to create server socket");
     }
+    setNonBlocking(_serverFd);
     _logger.log(INFO, "Server socket successfully created");
 
     int opt = 1;
@@ -64,7 +77,8 @@ void Server::init() {
         _logger.log(ERROR, "Failed to create pipe for signal handling");
         throw std::runtime_error("Failed to create pipe for signal handling");
     }
-
+    setNonBlocking(_pipeFd[0]);
+    setNonBlocking(_pipeFd[1]);
 }
 
 void Server::start(void) {
@@ -129,6 +143,7 @@ void Server::acceptConnection(void) {
         _logger.log(WARNING, "Failed to accept new client fd=" + Utils::toString(clientFd));
         return ;
     }
+    setNonBlocking(clientFd);
     _logger.log(INFO, "Accepted new client fd=" + Utils::toString(clientFd));
     
     struct sockaddr_in clientAddrIn = *reinterpret_cast<struct sockaddr_in*>(&clientAddr);
