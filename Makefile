@@ -1,5 +1,5 @@
 CC = c++
-FLAGS = -std=c++98 -Wall -Wextra -Werror
+FLAGS = -std=c++98 -Wall -Wextra -Werror 
 
 SRC_DIR = src/
 INC_DIR = include/

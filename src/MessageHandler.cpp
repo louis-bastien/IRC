@@ -168,7 +168,7 @@ void MessageHandler::handlePART(User& user, const Message& message, Server& serv
 void MessageHandler::handleTOPIC(User& user, const Message& message, Server& server) {
     validateTOPIC(user, message);
     std::string channelName = message.getParams()[0];
-    std::string topicName = message.getParams().size() == 2 ? message.getParams()[1] : std::string();
+    std::string topicName = !message.getTrailing().empty() ? message.getTrailing() : std::string();
 
     std::map<std::string, Channel>::iterator it = server.getChannelMap().find(channelName);
     if (it == server.getChannelMap().end()) {
