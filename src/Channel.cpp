@@ -59,6 +59,10 @@ void Channel::addUser(User& user, std::string password)
         logger.log(INFO, user.getNickname() + " is the operator of the channel " + name);
     }
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " JOIN " + name);
+    if (!topic.empty())
+        user.sendErrorMessage(RPL_TOPIC, user, name + " :" + topic);
+    else
+        user.sendErrorMessage(RPL_NOTOPIC, user, name + " :No topic is set");
     user.sendErrorMessage(RPL_NAMREPLY, user, "=" + name + " :" + listUsers());
     user.sendErrorMessage(RPL_ENDOFNAMES, user, name + " :End of /NAMES list");
     logger.log(DEBUG, "User joined channel: " + name + ", sending NAMES list: " + listUsers());
@@ -230,13 +234,13 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
         user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not in that channel");
         throw std::invalid_argument("The user is not part of the channel");
     }
-    if (!is_operator(user)) {
-        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
-        throw std::invalid_argument("The user is not a channel operator");
-    }
     if (params[0].length() == 1 && params[0][0] == 'b'){
         user.sendErrorMessage(RPL_ENDOFBANLIST, user, name + " :End of Channel Ban List");
         return;
+    }
+    if (!is_operator(user)) {
+        user.sendErrorMessage(ERR_CHANOPRIVSNEEDED, user, name + " :You're not a channel operator");
+        throw std::invalid_argument("The user is not a channel operator");
     }
     if (params[0].length() < 2 || (params[0][0] != '+' && params[0][0] != '-')) {
         user.sendErrorMessage(ERR_UNKNOWNMODE, user, name + " :Is unknown mode char");
@@ -318,18 +322,15 @@ void Channel::changeMode(User& user, std::vector<std::string> params)
                 throw std::invalid_argument("Channel mode flag(s) incorrect");
         }
     }
-    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " MODE " + name + " " + params[0], false);
+    broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " MODE " + name + " " + params[0]);
 }
 
-void Channel::broadcast(std::string msg, int excludedFd, bool serverPrefix)
+void Channel::broadcast(std::string msg, int excludedFd)
 {
     for (std::map<int, User>::iterator it = members.begin(); it != members.end(); ++it) {
         if (it->first == excludedFd)
             continue;
-        if (serverPrefix)
-            it->second.sendMessage(msg);
-        else
-            it->second.sendMessage(msg, false);
+        it->second.sendMessage(msg, false);
     }
     logger.log(INFO, msg);
 }
