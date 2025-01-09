@@ -4,7 +4,7 @@
 
 //IN SERVER WE NEED TO CHECK IF THE NAME IS EMPTY AFTER THE CREATION OF THE CHANNEL BECAUSE IF YES THEN SEND MSG TO THE USER
 //Maybe throw std::invalid_argument if name of the channel is wrong
-Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(false), invite_only(false), is_protected(false), user_limit(0)
+Channel::Channel(std::string& name, Logger& logger) : name(name), topic(""), logger(logger), topic_restricted(true), invite_only(false), is_protected(false), user_limit(0)
 {
     if (name.empty() || name.length() > 200 || 
         (name[0] != '#' && name[0] != '&') ||
