@@ -82,7 +82,7 @@ void Channel::partUser(User& user, std::string reason = "")
 {
     if (members.find(user.getSocketFd()) == members.end()) {
         user.sendErrorMessage(ERR_NOTONCHANNEL, user, name + " :You're not on that channel");
-        throw std::invalid_argument("The user is not part of the channel");
+        throw std::invalid_argument("The user is not part of the channel " + name);
     }
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " " + name + " :" + reason);
     members.erase(user.getSocketFd());

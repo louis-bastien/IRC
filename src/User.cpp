@@ -279,7 +279,7 @@ void User::leaveAllChannels(std::map<std::string, Channel>& allChannels)
         std::string channelName = *it;
         std::map<std::string, Channel>::iterator channelIt = allChannels.find(channelName);
         if (channelIt != allChannels.end()) 
-            channelIt->second.partUser(*this, "Leaving server");
+            channelIt->second.partUser(*this, "Leaving all channels");
     }
     channels.clear();
     logger.log(INFO, nickname + " left all channels.");
