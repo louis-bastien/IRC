@@ -145,7 +145,7 @@ void MessageHandler::handlePART(User& user, const Message& message, Server& serv
         return;
     }
     std::vector<std::string> channelNames = Utils::split(message.getParams()[0], ',');
-    std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getParams()[1];
+    std::string reason = message.getTrailing().empty() ? "No reason provided" : message.getTrailing();
     std::map<std::string, Channel>& channelMap = server.getChannelMap();
     while(!channelNames.empty()) {
         std::string currentChannel = channelNames.front();
