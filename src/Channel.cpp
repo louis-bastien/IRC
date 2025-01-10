@@ -167,6 +167,7 @@ void Channel::kickUser(User& user, std::string& target, std::string& reason)
     }
     User& target_user = it->second;
     broadcast(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " KICK " + name + " " + target + " :" + reason);
+    target_user.sendMessage(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " KICK " + name + " " + target + " :" + reason, false);
     members.erase(target_user.getSocketFd());
     operators.erase(target_user.getSocketFd());
 }
@@ -203,7 +204,8 @@ void Channel::inviteUser(User& user, std::string& target, std::map<int, User>& U
         throw std::invalid_argument("The invited user is already in the channel");
     }
     invited.insert(std::make_pair(target_user.getSocketFd(), target_user));
-    target_user.sendErrorMessage(RPL_INVITING, user, target + " " + name + " :Invitation successful");
+    user.sendErrorMessage(RPL_INVITING, user, target + " " + name);
+    target_user.sendMessage(":" + user.getNickname() + "!" + user.getUsername() + "@" + user.getHostname() + " INVITE " + target_user.getNickname() + " :" + name, false);
 }
 
 void Channel::printMode(User& user) {
