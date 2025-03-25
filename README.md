@@ -33,4 +33,4 @@ Through this project, I strengthened my understanding of **network architecture*
 
 ## 📬 Contact
 
-Built by [@lulubas](https://github.com/lulubas)
+Built and Maintained by [@lulubas](https://github.com/lulubas)
